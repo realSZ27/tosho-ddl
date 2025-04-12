@@ -44,8 +44,8 @@ public class ProxyController {
 
     private static final String SONARR_API_KEY = "8279ba5bcae34530b5f39775ece2161e";
     private static final String SONARR_BASE_URL = "http://100.90.104.92:8989";
-    private static final String SONARR_FOLDER = ".\\";
-    private static final String JDOWNLOADER_FOLDER = "D:\\apps\\JDownloader\\folderwatch";
+    private static final String SONARR_FOLDER = "C:\\Users\\karst\\Downloads\\";
+    private static final String JDOWNLOADER_FOLDER = "D:\\apps\\JDownloader\\folderwatch\\";
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -56,8 +56,8 @@ public class ProxyController {
             <retention days="9999"/>
             <registration available="no" open="yes"/>
             <searching>
-            <search available="yes" supportedParams="q"/>
-                <tv-search available="no" supportedParams="q"/>
+                <search available="yes" supportedParams="q"/>
+                <tv-search available="yes" supportedParams="q,ep,season"/>
                 <movie-search available="no" supportedParams="q"/>
             </searching>
             <categories>
@@ -83,23 +83,56 @@ public class ProxyController {
     public String handleNewznabRequest(@RequestParam MultiValueMap<String, String> allParams) {
         System.out.println("Got request for: " + allParams);
 
-        // Return capabilities XML if t=caps
         if ("caps".equalsIgnoreCase(allParams.getFirst("t"))) {
             return CAPABILITIES_XML;
         }
 
         try {
-            // Build full AnimeTosho query string
             StringBuilder queryString = new StringBuilder("https://feed.animetosho.org/api?");
+            String queryModifier = "";
+            List<String> qValues = new ArrayList<>();
+            String seasonStr = null;
+            String episodeStr = null;
+
             for (Map.Entry<String, List<String>> entry : allParams.entrySet()) {
-                for (String value : entry.getValue()) {
-                    if (!queryString.isEmpty()) queryString.append("&");
-                    queryString.append(URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8));
-                    queryString.append("=");
-                    queryString.append(URLEncoder.encode(value, StandardCharsets.UTF_8));
+                String key = entry.getKey();
+                List<String> values = entry.getValue();
+
+                if (key.equalsIgnoreCase("season") && !values.isEmpty()) {
+                    seasonStr = String.format("S%02d", Integer.parseInt(values.getFirst()));
+                } else if (key.equalsIgnoreCase("ep") && !values.isEmpty()) {
+                    episodeStr = String.format("E%02d", Integer.parseInt(values.getFirst()));
+                } else if (key.equalsIgnoreCase("q")) {
+                    qValues.addAll(values);
+                } else if (!key.equalsIgnoreCase("t")) { // Skip 't' parameter
+                    for (String value : values) {
+                        if (!queryString.toString().endsWith("?")) {
+                            queryString.append("&");
+                        }
+                        // Correct encoding by replacing '+' with '%20'
+                        String encodedKey = URLEncoder.encode(key, StandardCharsets.UTF_8).replace("+", "%20");
+                        String encodedValue = URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+                        queryString.append(encodedKey).append("=").append(encodedValue);
+                    }
                 }
             }
 
+            // Append modified 'q' parameters
+            if (!qValues.isEmpty()) {
+                String suffix = (seasonStr != null || episodeStr != null)
+                        ? " " + (seasonStr != null ? seasonStr : "") + (episodeStr != null ? episodeStr : "")
+                        : "";
+                for (String value : qValues) {
+                    if (!queryString.toString().endsWith("?")) {
+                        queryString.append("&");
+                    }
+                    String encodedValue = URLEncoder.encode(value + suffix, StandardCharsets.UTF_8)
+                            .replace("+", "%20");
+                    queryString.append("q=").append(encodedValue);
+                }
+            }
+
+            // Rest of the code to fetch and process XML...
             Document doc = Jsoup.connect(queryString.toString())
                     .ignoreContentType(true)
                     .parser(Parser.xmlParser())
@@ -142,11 +175,10 @@ public class ProxyController {
             }
 
             return doc.toString();
-
         } catch (IOException e) {
             return "<error><description>" + e.getMessage() + "</description></error>";
         } catch (Exception e) {
-            return "<error><description>Unexpected server error</description></error><torznab:error code=\"100\" description=\"Unexpected server error\" /><newznab:error code=\"100\" description=\"Unexpected server error\" />";
+            return "<error><description>Unexpected server error</description></error>";
         }
     }
 
@@ -164,18 +196,11 @@ public class ProxyController {
         }
 
         return result;
-        /*
-        return new DownloadLinks(
-                result.getOrDefault("buzzheavier", ""),
-                result.getOrDefault("gofile", ""),
-                result.getOrDefault("krakenfiles", ""),
-                List.of()
-        );
-         */
     }
 
     @Scheduled(fixedDelay = 30_000)
     public void checkSonarrQueue() {
+        System.out.println("Polling Sonarr...");
         try {
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(SONARR_BASE_URL + "/api/v3/queue"))
@@ -184,16 +209,16 @@ public class ProxyController {
 
             HttpResponse<String> res = HTTP_CLIENT.send(req, HttpResponse.BodyHandlers.ofString());
             JsonNode queue = OBJECT_MAPPER.readTree(res.body());
-            // System.out.println("Item: " + queue);
+            System.out.println("Item: " + queue);
 
             for (JsonNode item : queue.get("records")) {
                 JsonNode indexerNode = item.get("indexer");
                 if (indexerNode == null || !"AnimeTosho proxy".equalsIgnoreCase(indexerNode.asText())) continue;
 
                 String title = item.get("title").asText().trim();
-                // System.out.println("Title: " + title + "---------------------");
+                System.out.println("Title: " + title + "---------------------");
                 DownloadLinks links = TITLE_TO_LINKS.get(title);
-                // System.out.println("Links: " + links);
+                System.out.println("Links: " + links);
                 if (links == null) continue;
 
                 sendToJDownloader(links);
@@ -220,9 +245,9 @@ public class ProxyController {
     }
 
     private void sendToJDownloader(DownloadLinks links) {
-        // TODO: Replace this with your JDownloader integration
         try {
             Path filePath = Paths.get(JDOWNLOADER_FOLDER + links.title() + ".crawljob");
+            System.out.println(filePath);
             String content = String.format("""
                     downloadFolder=%s
                     text=%s
