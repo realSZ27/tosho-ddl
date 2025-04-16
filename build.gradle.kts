@@ -1,7 +1,3 @@
-import com.google.cloud.tools.jib.api.buildplan.ImageFormat
-import net.nemerosa.versioning.VersioningExtension
-import org.gradle.kotlin.dsl.invoke
-
 plugins {
     id("java")
     id("org.springframework.boot") version "3.4.4"
@@ -34,7 +30,7 @@ jib {
         image = "ghcr.io/realsz27/toshoddl:${project.version}"
         auth {
             username = "realsz27"
-            password = System.getenv("DOCKER_PASSWORD")
+            password = System.getenv("GITHUB_TOKEN")
         }
     }
     from {
