@@ -1,0 +1,54 @@
+name: Java CI
+
+on:
+  push:
+    paths:
+      - src/**
+      - .github/**
+      - build.gradle.kts
+      - settings.gradle.kts
+    tags:
+      - '**'
+    branches:
+      - 'develop'
+      - 'master'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Log into GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.13
+
+      - name: Build JVM OCI image
+        run: ./gradlew jib -Djib.to.image=ghcr.io/${{ github.repository }}:${{ github.ref_name }} -Djib.to.image=ghcr.io/${{ github.repository }}:latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the image with 'latest' and 'develop'
+        run: |
+          if [[ "${GITHUB_REF}" == "refs/heads/develop" ]]; then
+            docker tag ghcr.io/${{ github.repository }}:${{ github.event.repository.default_branch }} ghcr.io/${{ github.repository }}:develop
+            docker push ghcr.io/${{ github.repository }}:develop
+          fi
+          docker push ghcr.io/${{ github.repository }}:latest

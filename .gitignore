@@ -1,3 +1,6 @@
+# Testing config
+src/main/resources/application-testing.properties
+
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
