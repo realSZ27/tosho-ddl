@@ -40,6 +40,9 @@ jobs:
         with:
           gradle-version: 8.13
 
+      - name: Set execute permissions for gradlew
+        run: chmod +x ./gradlew
+
       - name: Build JVM OCI image
         run: ./gradlew jib -Djib.to.image=ghcr.io/${{ github.repository }}:${{ github.ref_name }} -Djib.to.image=ghcr.io/${{ github.repository }}:latest
         env:
