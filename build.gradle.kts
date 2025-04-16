@@ -26,13 +26,6 @@ dependencies {
 }
 
 jib {
-    to {
-        image = "ghcr.io/realsz27/toshoddl:${project.version}"
-        auth {
-            username = "realSZ27"
-            password = System.getenv("GITHUB_TOKEN")
-        }
-    }
     from {
         image = "eclipse-temurin:21-jre-alpine"
     }

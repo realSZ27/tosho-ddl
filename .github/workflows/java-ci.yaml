@@ -43,21 +43,25 @@ jobs:
       - name: Set execute permissions for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build JVM OCI image
-        run: ./gradlew jib -Djib.to.image=ghcr.io/${{ github.repository }}:${{ github.ref_name }} -Djib.to.image=ghcr.io/${{ github.repository }}:latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Set Lowercase Owner Name
         run: |
           echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
         env:
           OWNER: '${{ github.repository_owner }}'
 
-      - name: Tag the image with 'latest' and 'develop'
+      - name: Extract project version
+        id: get_version
         run: |
-          if [[ "${GITHUB_REF}" == "refs/heads/develop" ]]; then
-            docker tag ghcr.io/OWNER_LC:${{ github.event.repository.default_branch }} ghcr.io/OWNER_LC:develop
-            docker push ghcr.io/OWNER_LC:develop
+          VERSION=$(./gradlew properties -q | grep "^version:" | awk '{print $2}')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION"
+
+      - name: Build and Push Docker Image
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
+            ./gradlew jib -Djib.to.image=ghcr.io/${{ github.repository }}:develop
+          elif [[ "${GITHUB_REF_NAME}" == "master" ]]; then
+            ./gradlew jib -Djib.to.image=ghcr.io/${{ github.repository }}:${VERSION}
           fi
-          docker push ghcr.io/OWNER_LC:latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
