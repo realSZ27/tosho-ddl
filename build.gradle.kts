@@ -27,7 +27,7 @@ dependencies {
 
 jib {
     to {
-        image = "ghcr.io/realSZ27/toshoddl:${project.version}"
+        image = "ghcr.io/realsz27/toshoddl:${project.version}"
         auth {
             username = "realSZ27"
             password = System.getenv("GITHUB_TOKEN")
