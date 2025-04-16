@@ -55,4 +55,4 @@ jobs:
             docker tag ghcr.io/$LOWER_REPO_NAME:${{ github.event.repository.default_branch }} ghcr.io/$LOWER_REPO_NAME:develop
             docker push ghcr.io/$LOWER_REPO_NAME:develop
           fi
-          docker push ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/$LOWER_REPO_NAME:latest
