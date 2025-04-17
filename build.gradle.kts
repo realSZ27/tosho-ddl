@@ -34,6 +34,6 @@ jib {
         }
     }
     from {
-        image = "ghcr.io/ghcri/eclipse-temurin:21-jre-alpine"
+        image = "eclipse-temurin:21-jre-alpine"
     }
 }
