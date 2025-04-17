@@ -74,14 +74,14 @@ jobs:
               -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:pr-${PR_NUMBER}
         
             ./gradlew jib \
-              -Djib.to.image=docker.io/${DOCKER_USERNAME}/tosho-ddl:pr-${PR_NUMBER}
+              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:pr-${PR_NUMBER}
           
           elif [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
             ./gradlew jib \
               -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:develop
         
             ./gradlew jib \
-              -Djib.to.image=docker.io/${DOCKER_USERNAME}/tosho-ddl:develop
+              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:develop
           
           elif [[ "${GITHUB_REF_NAME}" == "master" ]]; then
             ./gradlew jib \
@@ -89,10 +89,10 @@ jobs:
               -Djib.to.tags=${VERSION},latest
         
             ./gradlew jib \
-              -Djib.to.image=docker.io/${DOCKER_USERNAME}/tosho-ddl \
+              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl \
               -Djib.to.tags=${VERSION},latest
           fi
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
