@@ -24,6 +24,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -52,28 +55,32 @@ jobs:
       - name: Set execute permissions for gradlew
         run: chmod +x ./gradlew
 
-      - name: Set Lowercase Owner Name
-        run: |
-          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
-        env:
-          OWNER: '${{ github.repository_owner }}'
-
       - name: Extract project version
         id: get_version
         run: |
           VERSION=$(./gradlew properties -q | grep "^version:" | awk '{print $2}')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Extracted version: $VERSION"
 
-      - name: Build and Push Docker Image
+      - name: Build and Push Multi-arch Images
         run: |
-          if [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
-            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:develop
-          elif [[ "${GITHUB_REF_NAME}" == "master" ]]; then
-            ./gradlew jib \
-            -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:${VERSION} \
-            -Djib.additional.tags=latest
+          DOCKERHUB_IMAGE="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/tosho-ddl"
+          GHCR_IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER}/tosho-ddl"
+          
+          # Determine tags based on branch
+          if [[ "$GITHUB_REF_NAME" == "develop" ]]; then
+            PRIMARY_TAG="develop"
+            ADDITIONAL_TAGS=""
+          elif [[ "$GITHUB_REF_NAME" == "master" ]]; then
+            PRIMARY_TAG="$VERSION"
+            ADDITIONAL_TAGS="-Djib.additional.tags=latest"
           fi
-        env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # Build for both registries
+          for REGISTRY_IMAGE in "$DOCKERHUB_IMAGE" "$GHCR_IMAGE"; do
+            ./gradlew jib \
+              -Djib.to.image="${REGISTRY_IMAGE}:${PRIMARY_TAG}" \
+              -Djib.from.platforms=linux/amd64,linux/arm64 \
+              -Djib.to.auth.username="${{ (contains(REGISTRY_IMAGE, 'docker.io') && secrets.DOCKERHUB_USERNAME) || github.actor }}" \
+              -Djib.to.auth.password="${{ (contains(REGISTRY_IMAGE, 'docker.io') && secrets.DOCKERHUB_TOKEN) || secrets.GITHUB_TOKEN }}" \
+              $ADDITIONAL_TAGS
+          done
