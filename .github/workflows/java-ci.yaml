@@ -67,13 +67,32 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          if [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
-            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:develop
+          if [[ "${GITHUB_REF}" == refs/pull/*/merge ]]; then
+            PR_NUMBER=$(echo "${GITHUB_REF}" | sed -E 's#refs/pull/([0-9]+)/merge#\1#')
+        
+            ./gradlew jib \
+              -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:pr-${PR_NUMBER}
+        
+            ./gradlew jib \
+              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:pr-${PR_NUMBER}
+          
+          elif [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
+            ./gradlew jib \
+              -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:develop
+        
+            ./gradlew jib \
+              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:develop
+          
           elif [[ "${GITHUB_REF_NAME}" == "master" ]]; then
             ./gradlew jib \
-            -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:${VERSION} \
-            -Djib.additional.tags=latest
+              -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl \
+              -Djib.to.tags=${VERSION},latest
+        
+            ./gradlew jib \
+              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl \
+              -Djib.to.tags=${VERSION},latest
           fi
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
