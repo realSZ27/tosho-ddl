@@ -12,7 +12,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +31,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 
 @SpringBootApplication
@@ -50,31 +47,30 @@ public class ProxyController {
     @Value("${blackhole.folder}") private final String SONARR_BLACKHOLE_FOLDER;
     @Value("${base.url}") private final String THIS_BASE_URL;
 
-    private final RestTemplate restTemplate = new RestTemplate();
-
     private static final String CAPABILITIES_XML = """
-                <caps>
-                    <server version="1.0" title="AnimeTosho DDL Proxy" strapline="AnimeTosho DDLs for Sonarr" url="https://github.com/realSZ27"/>
-                    <limits max="200" default="75"/>
-                    <retention days="9999"/>
-                    <registration available="no" open="yes"/>
-                    <searching>
-                        <search available="yes" supportedParams="q"/>
-                        <tv-search available="yes" supportedParams="q,ep,season"/>
-                        <movie-search available="no" supportedParams="q"/>
-                    </searching>
-                    <categories>
-                        <category id="5070" name="Anime" description="Anime"/>
-                        <category id="2020" name="Movies/Other" description="Movies (Anime)"/>
-                    </categories>
-                </caps>
-            """;
+        <caps>
+            <server version="1.0" title="AnimeTosho DDL Proxy" strapline="AnimeTosho DDLs for Sonarr" url="https://github.com/realSZ27"/>
+            <limits max="200" default="75"/>
+            <retention days="9999"/>
+            <registration available="no" open="yes"/>
+            <searching>
+                <search available="yes" supportedParams="q"/>
+                <tv-search available="yes" supportedParams="q,ep,season"/>
+                <movie-search available="no" supportedParams="q"/>
+            </searching>
+            <categories>
+                <category id="5070" name="Anime" description="Anime"/>
+                <category id="2020" name="Movies/Other" description="Movies (Anime)"/>
+            </categories>
+        </caps>
+        """;
 
     public ProxyController(
             @Value("${jdownloader.api.url}") String jdownloaderApiUrl,
             @Value("${download.folder}") String downloadFolder,
             @Value("${blackhole.folder}") String blackholeFolder,
-            @Value("${base.url}") String baseUrl) {
+            @Value("${base.url}") String baseUrl
+    ) {
         this.JDOWNLOADER_API_URL = jdownloaderApiUrl;
         this.SONARR_DOWNLOAD_FOLDER = downloadFolder;
         this.SONARR_BLACKHOLE_FOLDER = blackholeFolder;
@@ -91,11 +87,22 @@ public class ProxyController {
             String krakenfiles,
             List<String> multiup,
             String title
-    ) {}
+    ) {
+        public String[] getLinksInPriority() {
+            return new String[]{gofile(), buzzheavier(), krakenfiles()};
+        }
+    }
 
+
+    /*
+     * TODO: Strip out nzb support entirely. Theres not really a point to supporting nzb and torrent
+     *  at the same time.
+     *
+     * TODO: Also add better logging. It's so half assed right now.
+     */
     @GetMapping(value = "/api", produces = MediaType.APPLICATION_XML_VALUE)
     public String handleNewznabRequest(@RequestParam MultiValueMap<String, String> allParams) {
-        System.out.println("Got request for: " + allParams);
+        logger.debug("Got request for: {}", allParams);
 
         if ("caps".equalsIgnoreCase(allParams.getFirst("t"))) {
             return CAPABILITIES_XML;
@@ -184,8 +191,6 @@ public class ProxyController {
                     enclosure.attr("url", fakeUrl + extension);
                 });
 
-//                item.select("torznab\\:attr[name=infohash]").remove();
-
                 Map<String, String> descLink = parseDescriptionLinks(desc.html());
                 DownloadLinks links = new DownloadLinks(
                         descLink.getOrDefault("buzzheavier", ""),
@@ -198,6 +203,8 @@ public class ProxyController {
                     TITLE_TO_LINKS.put(title.trim(), links);
                 }
             }
+
+            logger.trace("Title to links: {}", TITLE_TO_LINKS);
 
             return doc.toString();
         } catch (IOException e) {
@@ -232,7 +239,6 @@ public class ProxyController {
                 e.printStackTrace(); // Log the exception
             }
         });
-        // watcherThread.setDaemon(true); // Optional: allows JVM to exit if this is the only thread left
         watcherThread.start();
     }
 
@@ -264,7 +270,7 @@ public class ProxyController {
                             sendToJDownloader(links);
                             file.delete();
                         } else {
-                            System.out.println("Links was null (couldnt find release)");
+                            System.out.println("Links was null (couldn't find release)");
                         }
                     } else {
                         System.out.println("New file wasnt torrent or nzb");
@@ -298,6 +304,39 @@ public class ProxyController {
         if (filename.endsWith(".torrent")) contentType = "application/x-bittorrent";
         else if (filename.endsWith(".nzb")) contentType = "application/x-nzb";
 
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            File blackholePath = new File(SONARR_BLACKHOLE_FOLDER);
+
+            for (File file : Objects.requireNonNull(blackholePath.listFiles())) {
+
+                String name = file.getName();
+                if (name.toLowerCase().endsWith(".torrent") || name.toLowerCase().endsWith(".nzb")) {
+                    int extensionIndex = name.lastIndexOf('.');
+                    if (extensionIndex == -1) continue;
+
+                    String title = name.substring(0, extensionIndex);
+                    System.out.println("Title is: " + title);
+                    DownloadLinks links = TITLE_TO_LINKS.get(title);
+                    if (links != null) {
+                        sendToJDownloader(links);
+                        if(file.delete()) {
+                            System.out.println("Successfully deleted blackhole file");
+                        } else {
+                            System.err.println("Couldn't delete blackhole file");
+                        }
+                    } else {
+                        System.out.println("Links was null (couldn't find release)");
+                    }
+                }
+            }
+        }).start();
+
         return ResponseEntity.ok()
                 .contentLength(fileContent.length)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
@@ -306,134 +345,15 @@ public class ProxyController {
     }
 
     private void sendToJDownloader(DownloadLinks links) {
-        String[] linksInOrder = {links.gofile(), links.buzzheavier(), links.krakenfiles()};
-                download(linksInOrder[0]);
-    }
-
-    private boolean isAvailable(String link) {
-        if (link == null || link.isBlank()) return false;
-
-        try {
-            // 1. Add link to temporary package (disabled)
-            Map<String, Object> addPayload = Map.of(
-                    "links", link,
-                    "enabled", false,
-                    "autostart", false
-            );
-
-            ResponseEntity<Map<String, Object>> addResponse = restTemplate.exchange(
-                    JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks",
-                    HttpMethod.POST,
-                    new HttpEntity<>(addPayload, createHeaders()),
-                    new ParameterizedTypeReference<>() {}
-            );
-
-            if (addResponse.getBody() == null || !addResponse.getStatusCode().is2xxSuccessful()) {
-                return false;
+        JDownloaderController JDownloader = new JDownloaderController(JDOWNLOADER_API_URL);
+        for(String link : links.getLinksInPriority()) {
+            if(JDownloader.isLinkOnline(link)) {
+                JDownloader.download(link, SONARR_DOWNLOAD_FOLDER);
+                return;
             }
-
-            // 2. Get job ID from response
-            Map<String, Object> responseData = (Map<String, Object>) addResponse.getBody().get("data");
-            if (responseData == null) return false;
-
-            Long jobId = ((Number) responseData.get("id")).longValue();
-            if (jobId == null) return false;
-
-            // 3. Wait for job to complete and links to be processed
-            boolean jobCompleted = false;
-            for (int i = 0; i < 5; i++) { // Retry up to 5 times
-                Thread.sleep(2000);
-
-                Map<String, Object> jobQuery = Map.of("jobIds", Collections.singletonList(jobId));
-                ResponseEntity<Map<String, Object>> jobStatusResponse = restTemplate.exchange(
-                        JDOWNLOADER_API_URL + "/linkgrabberv2/queryLinkCrawlerJobs",
-                        HttpMethod.POST,
-                        new HttpEntity<>(jobQuery, createHeaders()),
-                        new ParameterizedTypeReference<>() {}
-                );
-
-                if (jobStatusResponse.getBody() != null) {
-                    List<Map<String, Object>> jobs = (List<Map<String, Object>>) jobStatusResponse.getBody().get("data");
-                    if (jobs != null && !jobs.isEmpty()) {
-                        Map<String, Object> job = jobs.get(0);
-                        if ("finished".equals(job.get("status"))) {
-                            jobCompleted = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!jobCompleted) return false;
-
-            // 4. Query all links in linkgrabber with this URL
-            Map<String, Object> linkQuery = Map.of(
-                    "url", true,
-                    "maxResults", 100,
-                    "urlDisplayTypes", Collections.singletonList("ORIGIN")
-            );
-
-            ResponseEntity<Map<String, Object>> linksResponse = restTemplate.exchange(
-                    JDOWNLOADER_API_URL + "/linkgrabberv2/queryLinks",
-                    HttpMethod.POST,
-                    new HttpEntity<>(linkQuery, createHeaders()),
-                    new ParameterizedTypeReference<>() {}
-            );
-
-            if (linksResponse.getBody() == null) return false;
-
-            List<Map<String, Object>> links = (List<Map<String, Object>>) linksResponse.getBody().get("data");
-            boolean isAvailable = links.stream()
-                    .filter(l -> link.equals(l.get("url")))
-                    .anyMatch(l -> "online".equalsIgnoreCase((String) l.get("availability")));
-
-            // 5. Cleanup temporary links
-            List<Long> linkIds = links.stream()
-                    .filter(l -> link.equals(l.get("url")))
-                    .map(l -> ((Number) l.get("uuid")).longValue())
-                    .collect(Collectors.toList());
-
-            if (!linkIds.isEmpty()) {
-                restTemplate.postForEntity(
-                        JDOWNLOADER_API_URL + "/linkgrabberv2/removeLinks",
-                        new HttpEntity<>(Map.of("linkIds", linkIds), createHeaders()),
-                        Void.class
-                );
-            }
-
-            return isAvailable;
-        } catch (Exception e) {
-            logger.error("Availability check failed for {}", link, e);
-            return false;
         }
-    }
 
-    private void download(String link) {
-        try {
-            // Add link with autostart and proper folder
-            Map<String, Object> payload = Map.of(
-                    "links", link,
-                    "autostart", true,
-                    "destinationFolder", SONARR_DOWNLOAD_FOLDER,
-                    "enabled", true
-            );
-
-            restTemplate.postForEntity(
-                    JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks",
-                    new HttpEntity<>(payload, createHeaders()),
-                    Void.class
-            );
-
-            logger.info("Started download: {}", link);
-        } catch (Exception e) {
-            logger.error("Failed to start download for {}", link, e);
-        }
-    }
-
-    // Helper method for headers
-    private HttpHeaders createHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        return headers;
+        // TODO: Put this on a Sonarr blacklist? For now a warning is probably fine.
+        logger.warn("No valid links found for \"{}.\" This is not necessarily an error. Most likely, all the links were just expired.", links.title());
     }
 }
