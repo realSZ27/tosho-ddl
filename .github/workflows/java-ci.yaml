@@ -59,10 +59,10 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           if [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
-            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/toshoddl:develop
+            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:develop
           elif [[ "${GITHUB_REF_NAME}" == "master" ]]; then
             ./gradlew jib \
-            -Djib.to.image=ghcr.io/${OWNER_LC}/toshoddl:${VERSION} \
+            -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:${VERSION} \
             -Djib.additional.tags=latest
           fi
         env:
