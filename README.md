@@ -8,17 +8,20 @@ The easiest way to set this up is through Docker, although you can also use the 
 2. Make a `docker-compose.yaml` file with these contents:
 ~~~yaml
 services:
-  toshoddl:
+  tosho-ddl:
     container_name: toshoddl-docker
     image: ghcr.io/realsz27/tosho-ddl:latest
     environment:
       - JDOWNLOADER_API_URL: http://jdownloader-2:3128/
-      - BASE_URL: http://jdownloader-2:8080/
+      - BASE_URL: http://tosho-ddl:8080/
     volumes:
       - ./config/downloads:/downloads
       - ./config/blackhole:/blackhole
         
-  # Thanks jlesage for making this container
+  # You don't have to use this container, or any container
+  # for that matter. Any JDownloader instance will work.
+  # Just make sure you have properly set JDOWNLOADER_API_URL and
+  # BASE_URL so that JDownloader can contact the app, and vice versa.
   jdownloader-2:
     container_name: jdownloader-docker
     image: jlesage/jdownloader-2
@@ -44,7 +47,7 @@ Most of these don't need to be changed.
 ## Setup Sonarr
 1. In the `Download Clients` settings page, add a new `Torrent Blackhole` and set the `Torrent Folder` and `Watch Folder` to your blackhole and downloads folders respectively. Make sure Sonarr can access these folders, of course.
 ![blackhole-img.png](images/blackhole-img.png)
-2. Next, in the `Indexers` settings page, add a new `Torznab` indexer and set the URL to `http://toshoddl:8080` and select everything available in `Categories` and `Anime Categories`.
+2. Next, in the `Indexers` settings page, add a new `Torznab` indexer and set the URL to `http://tosho-ddl:8080` and select everything available in `Categories` and `Anime Categories`.
 ![torznab-1.png](images/torznab-1.png)
 ![torznab-2.png](images/torznab-2.png)
 Just to be sure, you can also set `Download Client` to the Torrent Blackhole with advanced settings turned on.
