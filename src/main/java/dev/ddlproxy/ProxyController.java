@@ -248,22 +248,22 @@ public class ProxyController {
         Thread watcherThread = new Thread(() -> {
             try {
                 checkSonarrBlackhole();
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace(); // Log the exception
+            } catch (IOException e) {
+                logger.error("Error accessing Sonarr blackhole folder");
+            } catch (InterruptedException e) {
+                logger.error("Filesystem watch service was interrupted");
             }
         });
         watcherThread.start();
     }
 
     public void checkSonarrBlackhole() throws IOException, InterruptedException {
-        System.out.println("blackhole watcher starting");
-
         WatchService watchService = FileSystems.getDefault().newWatchService();
         Path folderPath = Paths.get(SONARR_BLACKHOLE_FOLDER);
         folderPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
 
         while (true) {
-            WatchKey key = watchService.take(); // wait for a file to be created
+            WatchKey key = watchService.take();
 
             for (WatchEvent<?> event : key.pollEvents()) {
                 if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
@@ -324,34 +324,6 @@ public class ProxyController {
         String contentType = "application/octet-stream";
         if (filename.endsWith(".torrent")) contentType = "application/x-bittorrent";
         else if (filename.endsWith(".nzb")) contentType = "application/x-nzb";
-
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            File blackholePath = new File(SONARR_BLACKHOLE_FOLDER);
-
-            for (File file : Objects.requireNonNull(blackholePath.listFiles())) {
-
-                String name = file.getName();
-                if (name.toLowerCase().endsWith(".torrent") || name.toLowerCase().endsWith(".nzb")) {
-                    int extensionIndex = name.lastIndexOf('.');
-                    if (extensionIndex == -1) continue;
-
-                    String title = name.substring(0, extensionIndex);
-                    System.out.println("Title is: " + title);
-                    DownloadLinks links = TITLE_TO_LINKS.get(title);
-                    if (links != null) {
-                        sendToJDownloader(links);
-                    } else {
-                        System.out.println("Links was null (couldn't find release)");
-                    }
-                }
-            }
-        }).start();
 
         return ResponseEntity.ok()
                 .contentLength(fileContent.length)
