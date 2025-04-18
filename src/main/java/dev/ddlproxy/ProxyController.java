@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -71,10 +73,18 @@ public class ProxyController {
             @Value("${blackhole.folder}") String blackholeFolder,
             @Value("${base.url}") String baseUrl
     ) {
-        this.JDOWNLOADER_API_URL = jdownloaderApiUrl;
         this.SONARR_DOWNLOAD_FOLDER = downloadFolder;
         this.SONARR_BLACKHOLE_FOLDER = blackholeFolder;
-        this.THIS_BASE_URL = baseUrl;
+        if(baseUrl.endsWith("/")) {
+            this.THIS_BASE_URL = baseUrl.substring(0, baseUrl.length() - 2);
+        } else {
+            this.THIS_BASE_URL = baseUrl;
+        }
+        if(jdownloaderApiUrl.endsWith("/")) {
+            this.JDOWNLOADER_API_URL = jdownloaderApiUrl.substring(0, jdownloaderApiUrl.length() - 2);
+        } else {
+            this.JDOWNLOADER_API_URL = jdownloaderApiUrl;
+        }
     }
 
     public static void main(String[] args) {
@@ -283,19 +293,23 @@ public class ProxyController {
         }
     }
 
-    @GetMapping(value = "/links", produces = MediaType.APPLICATION_JSON_VALUE)
+/*    @GetMapping(value = "/links", produces = MediaType.APPLICATION_JSON_VALUE)
     public Map<String, DownloadLinks> getLinks() {
         return TITLE_TO_LINKS;
-    }
+    }*/
 
     // Function to make a fake download
     @GetMapping("/download/{filename}")
     public ResponseEntity<ByteArrayResource> downloadFile(@PathVariable String filename) throws IOException {
         filename = URLDecoder.decode(filename, StandardCharsets.UTF_8);
 
-        // Fake torrent file
-        Path path = Paths.get("src/main/resources/fake.torrent");
-        byte[] fileContent = Files.readAllBytes(path);
+        byte[] fileContent;
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("fake.torrent")) {
+            if (is == null) {
+                throw new FileNotFoundException("fake.torrent not found in resources");
+            }
+            fileContent = is.readAllBytes();
+        }
 
         ByteArrayResource resource = new ByteArrayResource(fileContent);
 
