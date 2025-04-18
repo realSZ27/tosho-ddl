@@ -77,13 +77,13 @@ public class ProxyController {
         this.SONARR_BLACKHOLE_FOLDER = blackholeFolder;
         if(baseUrl.endsWith("/")) {
             this.THIS_BASE_URL = baseUrl.substring(0, baseUrl.length() - 1);
-            logger.info("removed / from THIS_BASE_URL");
+            logger.debug("removed / from THIS_BASE_URL");
         } else {
             this.THIS_BASE_URL = baseUrl;
         }
         if(jdownloaderApiUrl.endsWith("/")) {
             this.JDOWNLOADER_API_URL = jdownloaderApiUrl.substring(0, jdownloaderApiUrl.length() - 1);
-            logger.info("removed / from JDOWNLOADER_API_URL");
+            logger.debug("removed / from JDOWNLOADER_API_URL");
         } else {
             this.JDOWNLOADER_API_URL = jdownloaderApiUrl;
         }
