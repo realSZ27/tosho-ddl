@@ -76,15 +76,16 @@ public class ProxyController {
         this.SONARR_DOWNLOAD_FOLDER = downloadFolder;
         this.SONARR_BLACKHOLE_FOLDER = blackholeFolder;
         if(baseUrl.endsWith("/")) {
-            this.THIS_BASE_URL = baseUrl.substring(0, baseUrl.length() - 2);
+            this.THIS_BASE_URL = baseUrl.substring(0, baseUrl.length() - 1);
         } else {
             this.THIS_BASE_URL = baseUrl;
         }
         if(jdownloaderApiUrl.endsWith("/")) {
-            this.JDOWNLOADER_API_URL = jdownloaderApiUrl.substring(0, jdownloaderApiUrl.length() - 2);
+            this.JDOWNLOADER_API_URL = jdownloaderApiUrl.substring(0, jdownloaderApiUrl.length() - 1);
         } else {
             this.JDOWNLOADER_API_URL = jdownloaderApiUrl;
         }
+        logger.info("Base URL: \"{}\"", THIS_BASE_URL);
     }
 
     public static void main(String[] args) {
@@ -102,7 +103,6 @@ public class ProxyController {
             return new String[]{gofile(), buzzheavier(), krakenfiles()};
         }
     }
-
 
     /*
      * TODO: Strip out nzb support entirely. Theres not really a point to supporting nzb and torrent
@@ -264,7 +264,7 @@ public class ProxyController {
 
             for (WatchEvent<?> event : key.pollEvents()) {
                 if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                    System.out.println("New file created in blackhole folder");
+                    logger.debug("New file created in blackhole folder");
                     Path createdFile = folderPath.resolve((Path) event.context());
                     File file = createdFile.toFile();
 
@@ -274,16 +274,20 @@ public class ProxyController {
                         if (extensionIndex == -1) continue;
 
                         String title = name.substring(0, extensionIndex);
-                        System.out.println("Title is: " + title);
+                        logger.trace("Title is: {}", title);
                         DownloadLinks links = TITLE_TO_LINKS.get(title);
                         if (links != null) {
                             sendToJDownloader(links);
-                            file.delete();
+                            if(file.delete()) {
+                                logger.debug("Successfully deleted: {}", file.getName());
+                            } else {
+                                logger.error("Couldn't delete: {}", file.getName());
+                            }
                         } else {
-                            System.out.println("Links was null (couldn't find release)");
+                            logger.warn("Couldn't find release in cache. If you just restarted this might not be an issue.");
                         }
                     } else {
-                        System.out.println("New file wasnt torrent or nzb");
+                        logger.debug("New file wasn't torrent or nzb");
                     }
                 }
             }
@@ -339,11 +343,6 @@ public class ProxyController {
                     DownloadLinks links = TITLE_TO_LINKS.get(title);
                     if (links != null) {
                         sendToJDownloader(links);
-                        if(file.delete()) {
-                            System.out.println("Successfully deleted blackhole file");
-                        } else {
-                            System.err.println("Couldn't delete blackhole file");
-                        }
                     } else {
                         System.out.println("Links was null (couldn't find release)");
                     }
