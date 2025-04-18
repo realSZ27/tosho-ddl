@@ -57,6 +57,6 @@ Just to be sure, you can also set `Download Client` to the Torrent Blackhole wit
 ## Setup JDownloader
 *Note: You don't have to use the docker container I provided as an example. Any instance will work.*
 
-In `Advanced Settings`, turn on the `Deprecated Api` and restart JDownloader.
+In `Advanced Settings`, turn on `Deprecated Api`, off `Deprecated Api Localhost Only` and restart JDownloader.
 ![jdownloader.png](images/jdownloader.png)
 
