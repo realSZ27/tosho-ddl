@@ -157,7 +157,7 @@ public class JDownloaderController {
             logger.error("Failed to clear linkgrabber list: {}", response.getBody());
             throw new RuntimeException("Clear list failed: " + response.getStatusCode());
         }
-        logger.info("Linkgrabber list cleared successfully");
+        logger.debug("Linkgrabber list cleared successfully");
     }
 
     public void download(String link, String destinationFolder) {
