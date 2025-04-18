@@ -333,10 +333,10 @@ public class ProxyController {
     }
 
     private void sendToJDownloader(DownloadLinks links) {
-        JDownloaderController JDownloader = new JDownloaderController(JDOWNLOADER_API_URL);
+        JDownloaderController jDownloader = new JDownloaderController(JDOWNLOADER_API_URL);
         for(String link : links.getLinksInPriority()) {
-            if(JDownloader.isLinkOnline(link)) {
-                JDownloader.download(link, SONARR_DOWNLOAD_FOLDER);
+            if(jDownloader.isLinkOnline(link)) {
+                jDownloader.download(link, SONARR_DOWNLOAD_FOLDER);
                 return;
             }
         }
