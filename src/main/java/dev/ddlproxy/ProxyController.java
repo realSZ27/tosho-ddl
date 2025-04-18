@@ -183,7 +183,10 @@ public class ProxyController {
 
                 String title = titleElement.text();
 
+
                 String fakeUrl = THIS_BASE_URL + "/download/" + URLEncoder.encode(title, StandardCharsets.UTF_8);
+                logger.info("Base URL here: \"{}\"", THIS_BASE_URL);
+                logger.info("URL: {}", fakeUrl);
 
                 // Replace the magnet link in the XML
                 Elements magnetUrlElements = item.select("torznab\\:attr[name=magneturl]");
