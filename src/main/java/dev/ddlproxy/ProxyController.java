@@ -87,8 +87,6 @@ public class ProxyController {
         } else {
             this.JDOWNLOADER_API_URL = jdownloaderApiUrl;
         }
-        logger.info("Base URL: \"{}\"", THIS_BASE_URL);
-        logger.info("JDownloader URL: \"{}\"", JDOWNLOADER_API_URL);
     }
 
     public static void main(String[] args) {
@@ -185,7 +183,7 @@ public class ProxyController {
 
                 String fakeUrl = THIS_BASE_URL + "/download/" + URLEncoder.encode(title, StandardCharsets.UTF_8);
                 logger.trace("Base URL in replace torrent url: \"{}\"", THIS_BASE_URL);
-                logger.info("Full torrent url: {}", fakeUrl);
+                logger.trace("Full torrent url: {}", fakeUrl);
 
                 // Replace the magnet link in the XML
                 Elements magnetUrlElements = item.select("torznab\\:attr[name=magneturl]");
