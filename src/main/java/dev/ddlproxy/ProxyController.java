@@ -174,6 +174,15 @@ public class ProxyController {
 
             Elements items = doc.select("item");
 
+            String realUrl;
+
+            if(THIS_BASE_URL.endsWith("/")) {
+                realUrl = THIS_BASE_URL.substring(0, THIS_BASE_URL.length() - 1);
+                logger.info("removed / from THIS_BASE_URL");
+            } else {
+                realUrl = THIS_BASE_URL;
+            }
+
             for (Element item : items) {
                 Element desc = item.selectFirst("description");
                 if (desc == null) continue;
@@ -183,9 +192,8 @@ public class ProxyController {
 
                 String title = titleElement.text();
 
-
-                String fakeUrl = THIS_BASE_URL + "/download/" + URLEncoder.encode(title, StandardCharsets.UTF_8);
-                logger.info("Base URL here: \"{}\"", THIS_BASE_URL);
+                String fakeUrl = realUrl + "/download/" + URLEncoder.encode(title, StandardCharsets.UTF_8);
+                logger.info("Base URL here: \"{}\"", realUrl);
                 logger.info("URL: {}", fakeUrl);
 
                 // Replace the magnet link in the XML
