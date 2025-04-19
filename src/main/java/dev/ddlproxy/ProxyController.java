@@ -176,6 +176,7 @@ public class ProxyController {
 
                 String title = titleElement.text();
 
+
                 String fakeUrl = THIS_BASE_URL + "/download/" + URLEncoder.encode(title, StandardCharsets.UTF_8) + ".torrent";
                 logger.trace("Base URL in replace torrent url: \"{}\"", THIS_BASE_URL);
                 logger.trace("Full torrent url: {}", fakeUrl);
