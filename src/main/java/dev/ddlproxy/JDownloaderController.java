@@ -1,5 +1,7 @@
 package dev.ddlproxy;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -9,9 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class JDownloaderController {
@@ -19,10 +18,6 @@ public class JDownloaderController {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private static final Logger logger  = LoggerFactory.getLogger(JDownloaderController.class);
-    private static final int MAX_RETRIES = 6; // 30 seconds total with 5s intervals
-
-
-    // TODO: Fix all the warnings
 
     public JDownloaderController(String baseURL) {
         this.JDOWNLOADER_API_URL = baseURL;
@@ -37,121 +32,97 @@ public class JDownloaderController {
     }
 
     public boolean isLinkOnline(String link) {
-        Long jobId = addLink(link);
-        Long linkId = null;
-        String availabilityStatus = "UNKNOWN";
-        int retries = 0;
+        addLink(link);
 
-        try {
-            while ("UNKNOWN".equals(availabilityStatus)) {
-                List<Map<String, Object>> links = queryLinks(jobId);
-                if (!links.isEmpty()) {
-                    Map<String, Object> linkDetails = links.get(0);
-                    availabilityStatus = (String) linkDetails.get("availability");
-                    linkId = ((Number) linkDetails.get("uuid")).longValue();
-                }
+        String result;
+        int maxRetries = 10;
+        int attempt = 0;
 
-                if ("UNKNOWN".equals(availabilityStatus)) {
-                    if (retries++ >= MAX_RETRIES) break;
-                    if (linkId != null) startOnlineStatusCheck(linkId);
-                    Thread.sleep(5000);
-                }
+        do {
+            result = queryLinks();
+            attempt++;
+
+            if ("ONLINE".equals(result)) {
+                clearList();
+                return true;
+            } else if("OFFLINE".equals(result)) {
+                clearList();
+                return false;
             }
 
-            clearList();
-            return "ONLINE".equals(availabilityStatus);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Operation interrupted", e);
-        }
+            logger.trace("Query result is UNKNOWN, retrying...");
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+        } while (attempt < maxRetries);
+        clearList();
+        logger.warn("maxRetries reached on link \"{}\"", link);
+        return false;
     }
 
-    private Long addLink(String link) {
+    private void addLink(String link) {
         String url = JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks";
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("links", link);
-        payload.put("autostart", false);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
+        Map<String, Object> payload = Map.of(
+                "links", link,
+                "autostart", false,
+                "url", true,
+                "enabled", true
+        );
 
-        ResponseEntity<Map> responseEntity = restTemplate.postForEntity(url, requestEntity, Map.class);
-        if (!responseEntity.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("Failed to add link: " + responseEntity.getStatusCode());
-        }
-
-        Map<String, Object> responseBody = responseEntity.getBody();
-        if (responseBody == null) {
-            throw new RuntimeException("Empty response when adding link");
-        }
-
-        Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
-        if (data == null) {
-            throw new RuntimeException("Missing data field in response: " + responseBody);
-        }
-
-        Number id = (Number) data.get("id");
-        if (id == null) {
-            throw new RuntimeException("Missing id in response data: " + data);
-        }
-
-        return id.longValue();
+        restTemplate.postForEntity(
+                url,
+                new HttpEntity<>(payload, new HttpHeaders() {{
+                    setContentType(MediaType.APPLICATION_JSON);
+                }}),
+                Void.class
+        );
     }
 
-    private List<Map<String, Object>> queryLinks(Long jobId) {
+    private String queryLinks() {
         String url = JDOWNLOADER_API_URL + "/linkgrabberv2/queryLinks";
 
-        // The API expects a queryParams object containing the actual parameters
-        Map<String, Object> queryParams = new HashMap<>();
-        queryParams.put("jobUUIDs", Collections.singletonList(jobId));
-        queryParams.put("availability", true);
-        queryParams.put("url", true);
+        Map<String, Object> payload = Map.of(
+                "availability", true,
+                "enabled", true
+        );
 
-        // Wrap query parameters in a queryParams object
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("queryParams", queryParams);
+        ResponseEntity<String> responseEntity = restTemplate.postForEntity(
+                url,
+                new HttpEntity<>(payload, new HttpHeaders() {{
+                    setContentType(MediaType.APPLICATION_JSON);
+                }}),
+                String.class
+        );
+        String jsonResponse = responseEntity.getBody();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
+        logger.trace("payload: {}", payload);
+        logger.trace("response: {}",jsonResponse);
 
-        ResponseEntity<Map> responseEntity = restTemplate.postForEntity(url, requestEntity, Map.class);
-
-        // Handle empty responses
-        if (responseEntity.getBody() == null) {
-            throw new RuntimeException("Empty response from queryLinks");
+        String linkState = "";
+        try {
+            JsonNode rootNode = new ObjectMapper().readTree(jsonResponse);
+            linkState = rootNode.path("data").get(0).path("availability").asText();
+        } catch (Exception e) {
+            logger.error("Error parsing the queryLinks response", e);
         }
 
-        // Access the nested data array
-        List<Map<String, Object>> links = (List<Map<String, Object>>)
-                responseEntity.getBody().get("data");
+        if(linkState.isEmpty()) {
+            logger.error("Couldn't get linkState");
 
-        return links != null ? links : Collections.emptyList();
-    }
-
-    private void startOnlineStatusCheck(Long linkId) {
-        String url = JDOWNLOADER_API_URL + "/linkgrabberv2/startOnlineStatusCheck";
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("linkIds", Collections.singletonList(linkId));
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
-
-        ResponseEntity<Map> responseEntity = restTemplate.postForEntity(url, requestEntity, Map.class);
-        if (!responseEntity.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("Failed to start status check: " + responseEntity.getStatusCode());
         }
+
+        return linkState;
     }
 
     private void clearList() {
         String url = JDOWNLOADER_API_URL + "/linkgrabberv2/clearList";
 
-        ResponseEntity<Map> response = restTemplate.getForEntity(
-                url,
-                Map.class
-        );
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
 
         if (!response.getStatusCode().is2xxSuccessful()) {
             logger.error("Failed to clear linkgrabber list: {}", response.getBody());
@@ -162,7 +133,6 @@ public class JDownloaderController {
 
     public void download(String link, String destinationFolder) {
         try {
-            // Add link with autostart and proper folder
             Map<String, Object> payload = Map.of(
                     "links", link,
                     "autostart", true,

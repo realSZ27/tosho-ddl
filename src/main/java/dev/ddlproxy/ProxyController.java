@@ -93,11 +93,12 @@ public class ProxyController {
         SpringApplication.run(ProxyController.class, args);
     }
 
+    // TODO: Support more hosts
     record DownloadLinks(
             String buzzheavier,
             String gofile,
             String krakenfiles,
-            List<String> multiup,
+
             String title
     ) {
         public String[] getLinksInPriority() {
@@ -105,14 +106,8 @@ public class ProxyController {
         }
     }
 
-    /*
-     * TODO: Strip out nzb support entirely. Theres not really a point to supporting nzb and torrent
-     *  at the same time.
-     *
-     * TODO: Also add better logging. It's so half assed right now.
-     */
     @GetMapping(value = "/api", produces = MediaType.APPLICATION_XML_VALUE)
-    public String handleNewznabRequest(@RequestParam MultiValueMap<String, String> allParams) {
+    public String handleRequest(@RequestParam MultiValueMap<String, String> allParams) {
         logger.debug("Got request for: {}", allParams);
 
         if ("caps".equalsIgnoreCase(allParams.getFirst("t"))) {
@@ -181,7 +176,7 @@ public class ProxyController {
 
                 String title = titleElement.text();
 
-                String fakeUrl = THIS_BASE_URL + "/download/" + URLEncoder.encode(title, StandardCharsets.UTF_8);
+                String fakeUrl = THIS_BASE_URL + "/download/" + URLEncoder.encode(title, StandardCharsets.UTF_8) + ".torrent";
                 logger.trace("Base URL in replace torrent url: \"{}\"", THIS_BASE_URL);
                 logger.trace("Full torrent url: {}", fakeUrl);
 
@@ -191,25 +186,13 @@ public class ProxyController {
                     magnetUrlElement.remove();
                 }
 
-                item.select("enclosure").forEach(enclosure -> {
-                    String type = enclosure.attr("type");
-
-                    // Determine extension based on MIME type
-                    String extension = switch (type) {
-                        case "application/x-bittorrent" -> ".torrent";
-                        case "application/x-nzb" -> ".nzb";
-                        default -> ".bin"; // fallback or unknown type
-                    };
-
-                    enclosure.attr("url", fakeUrl + extension);
-                });
+                item.select("enclosure").forEach(enclosure -> enclosure.attr("url", fakeUrl));
 
                 Map<String, String> descLink = parseDescriptionLinks(desc.html());
                 DownloadLinks links = new DownloadLinks(
                         descLink.getOrDefault("buzzheavier", ""),
                         descLink.getOrDefault("gofile", ""),
                         descLink.getOrDefault("krakenfiles", ""),
-                        List.of(),
                         title);
 
                 if (!title.isBlank()) {
@@ -262,6 +245,8 @@ public class ProxyController {
         Path folderPath = Paths.get(SONARR_BLACKHOLE_FOLDER);
         folderPath.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
 
+        logger.trace("Starting filesystem watch service in path: {}", folderPath);
+
         while (true) {
             WatchKey key = watchService.take();
 
@@ -272,7 +257,7 @@ public class ProxyController {
                     File file = createdFile.toFile();
 
                     String name = file.getName();
-                    if (name.toLowerCase().endsWith(".torrent") || name.toLowerCase().endsWith(".nzb")) {
+                    if (name.toLowerCase().endsWith(".torrent")) {
                         int extensionIndex = name.lastIndexOf('.');
                         if (extensionIndex == -1) continue;
 
@@ -300,11 +285,6 @@ public class ProxyController {
         }
     }
 
-/*    @GetMapping(value = "/links", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, DownloadLinks> getLinks() {
-        return TITLE_TO_LINKS;
-    }*/
-
     // Function to make a fake download
     @GetMapping("/download/{filename}")
     public ResponseEntity<ByteArrayResource> downloadFile(@PathVariable String filename) throws IOException {
@@ -320,15 +300,10 @@ public class ProxyController {
 
         ByteArrayResource resource = new ByteArrayResource(fileContent);
 
-        // Guess content type
-        String contentType = "application/octet-stream";
-        if (filename.endsWith(".torrent")) contentType = "application/x-bittorrent";
-        else if (filename.endsWith(".nzb")) contentType = "application/x-nzb";
-
         return ResponseEntity.ok()
                 .contentLength(fileContent.length)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .contentType(MediaType.parseMediaType(contentType))
+                .contentType(MediaType.parseMediaType("application/x-bittorrent"))
                 .body(resource);
     }
 
@@ -337,11 +312,12 @@ public class ProxyController {
         for(String link : links.getLinksInPriority()) {
             if(jDownloader.isLinkOnline(link)) {
                 jDownloader.download(link, SONARR_DOWNLOAD_FOLDER);
+                logger.debug("Link \"{}\" is online", link);
                 return;
             }
         }
 
-        // TODO: Put this on a Sonarr blacklist? For now a warning is probably fine.
+        // Put this on a Sonarr blacklist? For now a warning is probably fine.
         logger.warn("No valid links found for \"{}.\" This is not necessarily an error. Most likely, all the links were just expired.", links.title());
     }
 }
