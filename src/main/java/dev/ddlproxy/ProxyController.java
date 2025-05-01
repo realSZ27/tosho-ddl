@@ -15,6 +15,7 @@ import org.jsoup.select.Elements;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,6 +43,7 @@ import java.util.regex.Pattern;
 public class ProxyController {
 
     private static final Map<String, DownloadLinks> TITLE_TO_LINKS = new ConcurrentHashMap<>();
+    private static long cacheLastUsedTime = 0;
 
     private static final Logger logger  = LoggerFactory.getLogger(ProxyController.class);
 
@@ -198,6 +201,7 @@ public class ProxyController {
 
                 if (!title.isBlank()) {
                     TITLE_TO_LINKS.put(title.trim(), links);
+                    cacheLastUsedTime = System.currentTimeMillis();
                 }
             }
 
@@ -267,6 +271,7 @@ public class ProxyController {
                         DownloadLinks links = TITLE_TO_LINKS.get(title);
                         if (links != null) {
                             sendToJDownloader(links);
+                            cacheLastUsedTime = System.currentTimeMillis();
                             if(file.delete()) {
                                 logger.debug("Successfully deleted: {}", file.getName());
                             } else {
@@ -320,5 +325,11 @@ public class ProxyController {
 
         // Put this on a Sonarr blacklist? For now a warning is probably fine.
         logger.warn("No valid links found for \"{}.\" This is not necessarily an error. Most likely, all the links were just expired.", links.title());
+    }
+
+    @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
+    public void clearCache() {
+        long timeSinceLastUse = System.currentTimeMillis() - cacheLastUsedTime;
+        if(timeSinceLastUse > 3.6e6) TITLE_TO_LINKS.clear();
     }
 }
