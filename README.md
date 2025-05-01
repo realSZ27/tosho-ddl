@@ -1,3 +1,8 @@
+# Disclamers
+- I am an inexperienced programmer, if you have any CONSTRUCTIVE feedback, please say something!
+- Although I intend to maintain this app as long as it's useful, I have other things like school to keep up with.
+- For now, I'm calling this a beta. It works fine for me, but there are probably dozens of bugs that need to be fixed before I can call it good.
+
 # AnimeTosho DDL Proxy
 Gives Sonarr a valid Torznab feed to pick releases from, and picks up which one it chose via Torrent Blackhole. Then, downloads the release with JDownloader.
 
