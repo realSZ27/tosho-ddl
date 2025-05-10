@@ -140,14 +140,15 @@ public class JDownloaderController {
                     "enabled", true
             );
 
-            restTemplate.postForEntity(
+            ResponseEntity<String> jdownloaderResponse = restTemplate.postForEntity(
                     JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks",
                     new HttpEntity<>(payload, new HttpHeaders() {{
                         setContentType(MediaType.APPLICATION_JSON);
                     }}),
-                    Void.class
+                    String.class
             );
 
+            logger.trace("JDownloader response: {}", jdownloaderResponse.getBody());
             logger.info("Started download: {}", link);
         } catch (Exception e) {
             logger.error("Failed to start download for {}", link, e);
