@@ -65,6 +65,7 @@ public class JDownloaderController {
     }
 
     private void addLink(String link) {
+        logger.debug("Adding link \"{}\"", link);
         String url = JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks";
 
         Map<String, Object> payload = Map.of(
@@ -113,7 +114,6 @@ public class JDownloaderController {
 
         if(linkState.isEmpty()) {
             logger.error("Couldn't get linkState");
-
         }
 
         return linkState;
