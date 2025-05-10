@@ -43,7 +43,7 @@ import java.util.regex.Pattern;
 public class ProxyController {
 
     private static final Map<String, DownloadLinks> TITLE_TO_LINKS = new ConcurrentHashMap<>();
-    private static long cacheLastUsedTime = 0;
+    private static long cacheLastUsedTime = System.currentTimeMillis();
 
     private static final Logger logger  = LoggerFactory.getLogger(ProxyController.class);
 
@@ -330,6 +330,9 @@ public class ProxyController {
     @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
     public void clearCache() {
         long timeSinceLastUse = System.currentTimeMillis() - cacheLastUsedTime;
-        if(timeSinceLastUse > 3.6e6) TITLE_TO_LINKS.clear();
+        if(timeSinceLastUse > 3.6e6) {
+            TITLE_TO_LINKS.clear();
+            logger.debug("Cleared links list");
+        }
     }
 }
