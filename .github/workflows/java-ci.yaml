@@ -65,30 +65,43 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Extracted version: $VERSION"
 
+      - name: Cache Jib build output
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: ~/.cache/jib
+          key: ${{ runner.os }}-jib-${{ hashFiles('build.gradle') }}
+
       - name: Build and Push Docker Image
         run: |
           if [[ "${GITHUB_REF}" == refs/pull/*/merge ]]; then
             PR_NUMBER=$(echo "${GITHUB_REF}" | sed -E 's#refs/pull/([0-9]+)/merge#\1#')
         
             ./gradlew jib \
+              -Djib.cache.directory=~/.cache/jib \
               -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:pr-${PR_NUMBER}
         
             ./gradlew jib \
+              -Djib.cache.directory=~/.cache/jib \
               -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:pr-${PR_NUMBER}
           
           elif [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
             ./gradlew jib \
+              -Djib.cache.directory=~/.cache/jib \
               -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:develop
         
             ./gradlew jib \
+              -Djib.cache.directory=~/.cache/jib \
               -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:develop
           
           elif [[ "${GITHUB_REF_NAME}" == "master" ]]; then
             ./gradlew jib \
+              -Djib.cache.directory=~/.cache/jib \
               -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl \
               -Djib.to.tags=${VERSION},latest
         
             ./gradlew jib \
+              -Djib.cache.directory=~/.cache/jib \
               -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl \
               -Djib.to.tags=${VERSION},latest
           fi
