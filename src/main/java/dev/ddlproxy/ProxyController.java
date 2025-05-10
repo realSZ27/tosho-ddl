@@ -220,6 +220,7 @@ public class ProxyController {
                 // Extract the release name
                 Element entryInfoDiv = entry.selectFirst("div.link a");
                 String releaseName = Objects.requireNonNull(entryInfoDiv).text();
+                if(!releaseName.equals(query)) continue;
 
                 // Extract the download links
                 Elements linksElement = entry.select("div.links a.dllink, div.links a.website");
