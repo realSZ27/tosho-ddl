@@ -132,6 +132,7 @@ public class JDownloaderController {
     }
 
     public void download(String link, String destinationFolder) {
+        clearList();
         try {
             Map<String, Object> payload = Map.of(
                     "links", link,
