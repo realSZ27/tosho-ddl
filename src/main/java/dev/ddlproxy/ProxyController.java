@@ -1,21 +1,21 @@
 package dev.ddlproxy;
 
 import jakarta.annotation.PostConstruct;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
+import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,20 +31,12 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 @SpringBootApplication
 @RestController
 @EnableScheduling
 public class ProxyController {
-
-    private static final Map<String, DownloadLinks> TITLE_TO_LINKS = new ConcurrentHashMap<>();
-    private static long cacheLastUsedTime = 0;
-
     private static final Logger logger  = LoggerFactory.getLogger(ProxyController.class);
 
     private final String JDOWNLOADER_API_URL;
@@ -96,21 +88,36 @@ public class ProxyController {
         SpringApplication.run(ProxyController.class, args);
     }
 
-    // TODO: Support more hosts
     record DownloadLinks(
-            String buzzheavier,
-            String gofile,
-            String krakenfiles,
-
+            ArrayList<String> links,
             String title
     ) {
-        public String[] getLinksInPriority() {
-            return new String[]{gofile(), buzzheavier(), krakenfiles()};
+        public ArrayList<String> getLinksInPriority() {
+            links.sort(new Comparator<>() {
+                @Override
+                public int compare(String link1, String link2) {
+                    return Integer.compare(getPriority(link1), getPriority(link2));
+                }
+
+                private int getPriority(String link) {
+                    if (link.contains("gofile")) return 1; // Highest priority
+                    if (link.contains("buzzheavier")) return 2; // Medium priority
+                    return Integer.MAX_VALUE; // Default for unknown links
+                }
+            });
+
+            return links;
         }
     }
 
     @GetMapping(value = "/api", produces = MediaType.APPLICATION_XML_VALUE)
     public String handleRequest(@RequestParam MultiValueMap<String, String> allParams) {
+        logger.debug("Got request for: {}", allParams);
+
+        if ("caps".equalsIgnoreCase(allParams.getFirst("t"))) {
+            return CAPABILITIES_XML;
+        }
+
         logger.debug("Got request for: {}", allParams);
 
         if ("caps".equalsIgnoreCase(allParams.getFirst("t"))) {
@@ -191,21 +198,7 @@ public class ProxyController {
                 }
 
                 item.select("enclosure").forEach(enclosure -> enclosure.attr("url", fakeUrl));
-
-                Map<String, String> descLink = parseDescriptionLinks(desc.html());
-                DownloadLinks links = new DownloadLinks(
-                        descLink.getOrDefault("buzzheavier", ""),
-                        descLink.getOrDefault("gofile", ""),
-                        descLink.getOrDefault("krakenfiles", ""),
-                        title);
-
-                if (!title.isBlank()) {
-                    TITLE_TO_LINKS.put(title.trim(), links);
-                    cacheLastUsedTime = System.currentTimeMillis();
-                }
             }
-
-            logger.trace("Title to links: {}", TITLE_TO_LINKS);
 
             return doc.toString();
         } catch (IOException e) {
@@ -215,20 +208,39 @@ public class ProxyController {
         }
     }
 
-    private Map<String, String> parseDescriptionLinks(String html) {
-        List<String> foundLinks = new ArrayList<>();
-        Matcher matcher = Pattern.compile("(?i)\"(http[^\"]+)\"").matcher(html);
-        while (matcher.find()) foundLinks.add(matcher.group(1));
+    private DownloadLinks scrape(String query) {
+        DownloadLinks linksObject = new DownloadLinks(new ArrayList<>(), "");
+        try {
+            Document pageDoc = Jsoup.connect("https://animetosho.org/search?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8))
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/138.0")
+                    .get();
+            Elements entries = pageDoc.select("div.home_list_entry");
 
-        Map<String, String> result = new HashMap<>();
-        for (String link : foundLinks) {
-            String l = link.toLowerCase();
-            if (l.contains("gofile")) result.put("gofile", link);
-            else if (l.contains("buzzheavier")) result.put("buzzheavier", link);
-            else if (l.contains("krakenfiles")) result.put("krakenfiles", link);
+            for (Element entry : entries) {
+                // Extract the release name
+                Element entryInfoDiv = entry.selectFirst("div.link a");
+                String releaseName = Objects.requireNonNull(entryInfoDiv).text();
+
+                // Extract the download links
+                Elements linksElement = entry.select("div.links a.dllink, div.links a.website");
+
+                ArrayList<String> links = new ArrayList<>();
+                for (Element linkElement : linksElement) {
+                    // Filter out "Torrent" and "Magnet" links
+                    String linkText = linkElement.text();
+                    if (!linkText.equals("Torrent") && !linkText.equals("Magnet")) {
+                        links.add(linkElement.attr("href"));
+                    }
+                }
+
+                // Create a DownloadLinks object
+                linksObject = new DownloadLinks(links, releaseName);
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-        return result;
+        return linksObject;
     }
 
     @PostConstruct
@@ -238,6 +250,7 @@ public class ProxyController {
                 checkSonarrBlackhole();
             } catch (IOException e) {
                 logger.error("Error accessing Sonarr blackhole folder");
+                throw new RuntimeException("Can't access blackhole folder");
             } catch (InterruptedException e) {
                 logger.error("Filesystem watch service was interrupted");
             }
@@ -268,20 +281,19 @@ public class ProxyController {
 
                         String title = name.substring(0, extensionIndex);
                         logger.trace("Title is: {}", title);
-                        DownloadLinks links = TITLE_TO_LINKS.get(title);
+                        DownloadLinks links = scrape(title);
                         if (links != null) {
                             sendToJDownloader(links);
-                            cacheLastUsedTime = System.currentTimeMillis();
                             if(file.delete()) {
                                 logger.debug("Successfully deleted: {}", file.getName());
                             } else {
                                 logger.error("Couldn't delete: {}", file.getName());
                             }
                         } else {
-                            logger.warn("Couldn't find release in cache. If you just restarted this might not be an issue.");
+                            logger.error("Couldn't find release in search.");
                         }
                     } else {
-                        logger.debug("New file wasn't torrent or nzb");
+                        logger.trace("New file wasn't torrent or nzb");
                     }
                 }
             }
@@ -325,11 +337,5 @@ public class ProxyController {
 
         // Put this on a Sonarr blacklist? For now a warning is probably fine.
         logger.warn("No valid links found for \"{}.\" This is not necessarily an error. Most likely, all the links were just expired.", links.title());
-    }
-
-    @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
-    public void clearCache() {
-        long timeSinceLastUse = System.currentTimeMillis() - cacheLastUsedTime;
-        if(timeSinceLastUse > 3.6e6) TITLE_TO_LINKS.clear();
     }
 }

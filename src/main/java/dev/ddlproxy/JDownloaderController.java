@@ -65,6 +65,7 @@ public class JDownloaderController {
     }
 
     private void addLink(String link) {
+        logger.debug("Adding link \"{}\"", link);
         String url = JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks";
 
         Map<String, Object> payload = Map.of(
@@ -113,7 +114,6 @@ public class JDownloaderController {
 
         if(linkState.isEmpty()) {
             logger.error("Couldn't get linkState");
-
         }
 
         return linkState;
@@ -140,14 +140,15 @@ public class JDownloaderController {
                     "enabled", true
             );
 
-            restTemplate.postForEntity(
+            ResponseEntity<String> jdownloaderResponse = restTemplate.postForEntity(
                     JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks",
                     new HttpEntity<>(payload, new HttpHeaders() {{
                         setContentType(MediaType.APPLICATION_JSON);
                     }}),
-                    Void.class
+                    String.class
             );
 
+            logger.trace("JDownloader response: {}", jdownloaderResponse.getBody());
             logger.info("Started download: {}", link);
         } catch (Exception e) {
             logger.error("Failed to start download for {}", link, e);

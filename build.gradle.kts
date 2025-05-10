@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "dev.ddlproxy"
-version = "1.0.4"
+version = "1.1.0"
 
 java {
     toolchain {
@@ -23,7 +23,6 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.jsoup:jsoup:1.19.1")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.18.3")
 }
 
 jib {
