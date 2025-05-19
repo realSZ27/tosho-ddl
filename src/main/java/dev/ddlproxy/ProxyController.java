@@ -37,7 +37,7 @@ import java.util.*;
 @RestController
 @EnableScheduling
 public class ProxyController {
-    private static final Logger logger  = LoggerFactory.getLogger(ProxyController.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProxyController.class);
 
     private final String JDOWNLOADER_API_URL;
     private final String SONARR_DOWNLOAD_FOLDER;
@@ -45,22 +45,22 @@ public class ProxyController {
     private final String THIS_BASE_URL;
 
     private static final String CAPABILITIES_XML = """
-        <caps>
-            <server version="1.0" title="AnimeTosho DDL Proxy" strapline="AnimeTosho DDLs for Sonarr" url="https://github.com/realSZ27"/>
-            <limits max="200" default="75"/>
-            <retention days="9999"/>
-            <registration available="no" open="yes"/>
-            <searching>
-                <search available="yes" supportedParams="q"/>
-                <tv-search available="yes" supportedParams="q,ep,season"/>
-                <movie-search available="no" supportedParams="q"/>
-            </searching>
-            <categories>
-                <category id="5070" name="Anime" description="Anime"/>
-                <category id="2020" name="Movies/Other" description="Movies (Anime)"/>
-            </categories>
-        </caps>
-        """;
+            <caps>
+                <server version="1.0" title="AnimeTosho DDL Proxy" strapline="AnimeTosho DDLs for Sonarr" url="https://github.com/realSZ27"/>
+                <limits max="200" default="75"/>
+                <retention days="9999"/>
+                <registration available="no" open="yes"/>
+                <searching>
+                    <search available="yes" supportedParams="q"/>
+                    <tv-search available="yes" supportedParams="q,ep,season"/>
+                    <movie-search available="no" supportedParams="q"/>
+                </searching>
+                <categories>
+                    <category id="5070" name="Anime" description="Anime"/>
+                    <category id="2020" name="Movies/Other" description="Movies (Anime)"/>
+                </categories>
+            </caps>
+            """;
 
     public ProxyController(
             @Value("${jdownloader.api.url}") String jdownloaderApiUrl,
@@ -70,13 +70,13 @@ public class ProxyController {
     ) {
         this.SONARR_DOWNLOAD_FOLDER = downloadFolder;
         this.SONARR_BLACKHOLE_FOLDER = blackholeFolder;
-        if(baseUrl.endsWith("/")) {
+        if (baseUrl.endsWith("/")) {
             this.THIS_BASE_URL = baseUrl.substring(0, baseUrl.length() - 1);
             logger.debug("removed / from THIS_BASE_URL");
         } else {
             this.THIS_BASE_URL = baseUrl;
         }
-        if(jdownloaderApiUrl.endsWith("/")) {
+        if (jdownloaderApiUrl.endsWith("/")) {
             this.JDOWNLOADER_API_URL = jdownloaderApiUrl.substring(0, jdownloaderApiUrl.length() - 1);
             logger.debug("removed / from JDOWNLOADER_API_URL");
         } else {
@@ -220,7 +220,7 @@ public class ProxyController {
                 // Extract the release name
                 Element entryInfoDiv = entry.selectFirst("div.link a");
                 String releaseName = Objects.requireNonNull(entryInfoDiv).text();
-                if(!releaseName.equals(query)) continue;
+                if (!releaseName.equals(query)) continue;
 
                 // Extract the download links
                 Elements linksElement = entry.select("div.links a.dllink, div.links a.website");
@@ -285,7 +285,7 @@ public class ProxyController {
                         DownloadLinks links = scrape(title);
                         if (links != null) {
                             sendToJDownloader(links);
-                            if(file.delete()) {
+                            if (file.delete()) {
                                 logger.debug("Successfully deleted: {}", file.getName());
                             } else {
                                 logger.error("Couldn't delete: {}", file.getName());
@@ -328,8 +328,8 @@ public class ProxyController {
 
     private void sendToJDownloader(DownloadLinks links) {
         JDownloaderController jDownloader = new JDownloaderController(JDOWNLOADER_API_URL);
-        for(String link : links.getLinksInPriority()) {
-            if(jDownloader.isLinkOnline(link)) {
+        for (String link : links.getLinksInPriority()) {
+            if (jDownloader.isLinkOnline(link)) {
                 jDownloader.download(link, SONARR_DOWNLOAD_FOLDER);
                 logger.debug("Link \"{}\" is online", link);
                 return;

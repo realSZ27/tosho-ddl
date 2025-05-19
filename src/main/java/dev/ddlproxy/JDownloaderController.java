@@ -17,7 +17,7 @@ public class JDownloaderController {
     private final String JDOWNLOADER_API_URL;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final Logger logger  = LoggerFactory.getLogger(JDownloaderController.class);
+    private static final Logger logger = LoggerFactory.getLogger(JDownloaderController.class);
 
     public JDownloaderController(String baseURL) {
         this.JDOWNLOADER_API_URL = baseURL;
@@ -45,7 +45,7 @@ public class JDownloaderController {
             if ("ONLINE".equals(result)) {
                 clearList();
                 return true;
-            } else if("OFFLINE".equals(result)) {
+            } else if ("OFFLINE".equals(result)) {
                 clearList();
                 return false;
             }
@@ -102,17 +102,19 @@ public class JDownloaderController {
         String jsonResponse = responseEntity.getBody();
 
         logger.trace("payload: {}", payload);
-        logger.trace("response: {}",jsonResponse);
+        logger.trace("response: {}", jsonResponse);
 
         String linkState = "";
         try {
             JsonNode rootNode = new ObjectMapper().readTree(jsonResponse);
             linkState = rootNode.path("data").get(0).path("availability").asText();
+        } catch (NullPointerException e) {
+            linkState = "UNKNOWN";
         } catch (Exception e) {
             logger.error("Error parsing the queryLinks response", e);
         }
 
-        if(linkState.isEmpty()) {
+        if (linkState.isEmpty()) {
             logger.error("Couldn't get linkState");
         }
 
