@@ -2,7 +2,7 @@ import java.time.Instant
 
 plugins {
     id("java")
-    id("org.springframework.boot") version "3.4.4"
+    id("org.springframework.boot") version "3.4.5"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.cloud.tools.jib") version "3.4.5"
 }
@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.jsoup:jsoup:1.19.1")
+    implementation("org.jsoup:jsoup:1.20.1")
 }
 
 jib {
