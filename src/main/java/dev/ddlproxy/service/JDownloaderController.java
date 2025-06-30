@@ -1,4 +1,4 @@
-package dev.ddlproxy;
+package dev.ddlproxy.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Map;
 
 public class JDownloaderController {
@@ -31,8 +32,8 @@ public class JDownloaderController {
         });
     }
 
-    public boolean isLinkOnline(String link) {
-        addLink(link);
+    public boolean isLinkOnline(ArrayList<String> link) {
+        addLink(link.toString());
 
         String result;
         int maxRetries = 10;
@@ -107,7 +108,10 @@ public class JDownloaderController {
         String linkState = "";
         try {
             JsonNode rootNode = new ObjectMapper().readTree(jsonResponse);
-            linkState = rootNode.path("data").get(0).path("availability").asText();
+            for (JsonNode data : rootNode.path("data")) {
+                String currentLinkState = data.path("availability").asText();
+                if (currentLinkState.equals("OFFLINE")) break;
+            }
         } catch (NullPointerException e) {
             linkState = "UNKNOWN";
         } catch (Exception e) {
@@ -133,11 +137,11 @@ public class JDownloaderController {
         logger.debug("Linkgrabber list cleared successfully");
     }
 
-    public void download(String link, String destinationFolder) {
+    public void download(ArrayList<String> link, String destinationFolder) {
         clearList();
         try {
             Map<String, Object> payload = Map.of(
-                    "links", link,
+                    "links", link.toString(),
                     "autostart", true,
                     "destinationFolder", destinationFolder,
                     "enabled", true
