@@ -1,4 +1,4 @@
-package dev.ddlproxy;
+package dev.ddlproxy.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Map;
 
 public class JDownloaderController {
@@ -31,8 +32,8 @@ public class JDownloaderController {
         });
     }
 
-    public boolean isLinkOnline(String link) {
-        addLink(link);
+    public boolean isLinkOnline(ArrayList<String> link) {
+        addLink(link.toString());
 
         String result;
         int maxRetries = 10;
@@ -42,12 +43,25 @@ public class JDownloaderController {
             result = queryLinks();
             attempt++;
 
-            if ("ONLINE".equals(result)) {
-                clearList();
-                return true;
-            } else if ("OFFLINE".equals(result)) {
-                clearList();
-                return false;
+            switch (result) {
+                case "ONLINE":
+                    clearList();
+                    return true;
+                case "OFFLINE":
+                    clearList();
+                    return false;
+                case "MIXED":
+                    logger.trace("Some links are not fully online, continuing to wait...");
+                    break;
+                case "UNKNOWN":
+                    logger.trace("Query returned UNKNOWN state, retrying...");
+                    break;
+                case "ERROR":
+                    logger.error("Error encountered while querying links.");
+                    break;
+                default:
+                    logger.warn("Unexpected link state: {}", result);
+                    break;
             }
 
             logger.trace("Query result is UNKNOWN, retrying...");
@@ -92,33 +106,48 @@ public class JDownloaderController {
                 "enabled", true
         );
 
-        ResponseEntity<String> responseEntity = restTemplate.postForEntity(
-                url,
-                new HttpEntity<>(payload, new HttpHeaders() {{
-                    setContentType(MediaType.APPLICATION_JSON);
-                }}),
-                String.class
-        );
-        String jsonResponse = responseEntity.getBody();
-
-        logger.trace("payload: {}", payload);
-        logger.trace("response: {}", jsonResponse);
-
-        String linkState = "";
         try {
+            ResponseEntity<String> responseEntity = restTemplate.postForEntity(
+                    url,
+                    new HttpEntity<>(payload, new HttpHeaders() {{
+                        setContentType(MediaType.APPLICATION_JSON);
+                    }}),
+                    String.class
+            );
+
+            String jsonResponse = responseEntity.getBody();
+            logger.trace("payload: {}", payload);
+            logger.trace("response: {}", jsonResponse);
+
             JsonNode rootNode = new ObjectMapper().readTree(jsonResponse);
-            linkState = rootNode.path("data").get(0).path("availability").asText();
-        } catch (NullPointerException e) {
-            linkState = "UNKNOWN";
+            JsonNode dataArray = rootNode.path("data");
+
+            if (!dataArray.isArray() || dataArray.isEmpty()) {
+                logger.warn("No data returned from linkgrabber query");
+                return "UNKNOWN";
+            }
+
+            boolean anyOffline = false;
+            boolean allOnline = true;
+
+            for (JsonNode data : dataArray) {
+                String availability = data.path("availability").asText();
+                if (!availability.equalsIgnoreCase("ONLINE")) {
+                    allOnline = false;
+                    if (availability.equalsIgnoreCase("OFFLINE")) {
+                        anyOffline = true;
+                    }
+                }
+            }
+
+            if (allOnline) return "ONLINE";
+            if (anyOffline) return "OFFLINE";
+            return "MIXED";
+
         } catch (Exception e) {
-            logger.error("Error parsing the queryLinks response", e);
+            logger.error("Error during queryLinks", e);
+            return "ERROR";
         }
-
-        if (linkState.isEmpty()) {
-            logger.error("Couldn't get linkState");
-        }
-
-        return linkState;
     }
 
     private void clearList() {
@@ -133,16 +162,19 @@ public class JDownloaderController {
         logger.debug("Linkgrabber list cleared successfully");
     }
 
-    public void download(String link, String destinationFolder) {
+    public void download(ArrayList<String> link, String destinationFolder) {
         clearList();
-        try {
-            Map<String, Object> payload = Map.of(
-                    "links", link,
-                    "autostart", true,
-                    "destinationFolder", destinationFolder,
-                    "enabled", true
-            );
 
+        Map<String, Object> payload = Map.of(
+                "links", String.join("\n", link),
+                "autostart", true,
+                "destinationFolder", destinationFolder,
+                "enabled", true,
+                "autoExtract", true,
+                "overwritePackagizerRules", true
+        );
+
+        try {
             ResponseEntity<String> jdownloaderResponse = restTemplate.postForEntity(
                     JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks",
                     new HttpEntity<>(payload, new HttpHeaders() {{
@@ -154,7 +186,7 @@ public class JDownloaderController {
             logger.trace("JDownloader response: {}", jdownloaderResponse.getBody());
             logger.info("Started download: {}", link);
         } catch (Exception e) {
-            logger.error("Failed to start download for {}", link, e);
+            logger.error("Failed to start download: {}", link, e);
         }
     }
 }

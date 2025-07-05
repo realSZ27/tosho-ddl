@@ -8,7 +8,6 @@ Gives Sonarr a valid Torznab feed to pick releases from, and picks up which one 
 
 ## Limitations
 - Links expire quickly on AnimeTosho, so pretty much only new releases work. Unfortunately, there's nothing I can do about this
-- Only single-part mirrors work. (For now(tm))
 
 # Setup
 The easiest way to set this up is through Docker, although you can also use the jars provided in the releases tab.
