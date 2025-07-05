@@ -22,7 +22,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.jsoup:jsoup:1.20.1")
+    implementation("org.jsoup:jsoup:1.21.1")
 }
 
 jib {
