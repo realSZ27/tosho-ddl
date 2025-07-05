@@ -164,15 +164,17 @@ public class JDownloaderController {
 
     public void download(ArrayList<String> link, String destinationFolder) {
         clearList();
-        try {
-            Map<String, Object> payload = Map.of(
-                    "links", String.join("\n", link),
-                    "autostart", true,
-                    "destinationFolder", destinationFolder,
-                    "enabled", true,
-                    "autoExtract", true
-            );
 
+        Map<String, Object> payload = Map.of(
+                "links", String.join("\n", link),
+                "autostart", true,
+                "destinationFolder", destinationFolder,
+                "enabled", true,
+                "autoExtract", true,
+                "overwritePackagizerRules", true
+        );
+
+        try {
             ResponseEntity<String> jdownloaderResponse = restTemplate.postForEntity(
                     JDOWNLOADER_API_URL + "/linkgrabberv2/addLinks",
                     new HttpEntity<>(payload, new HttpHeaders() {{
@@ -184,7 +186,7 @@ public class JDownloaderController {
             logger.trace("JDownloader response: {}", jdownloaderResponse.getBody());
             logger.info("Started download: {}", link);
         } catch (Exception e) {
-            logger.error("Failed to start download for {}", link, e);
+            logger.error("Failed to start download: {}", link, e);
         }
     }
 }
