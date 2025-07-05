@@ -111,24 +111,53 @@ public class DownloadService {
         String jsonEndpoint = "https://feed.animetosho.org/json";
         String finalUrl = jsonEndpoint + "?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
 
-        int torrentId = GET(finalUrl).get(0).get("id").asInt();
+        JsonNode searchResults = GET(finalUrl);
+        if (!searchResults.isArray() || searchResults.isEmpty()) {
+            logger.warn("No results found for query: {}", query);
+            return new DownloadLinks(new ArrayList<>(), query);
+        }
+
+        int torrentId = searchResults.get(0).get("id").asInt();
         logger.trace("Torrent ID is: {}", torrentId);
+
+        JsonNode torrentData = GET(jsonEndpoint + "?show=torrent&id=" + torrentId);
+        JsonNode filesArray = torrentData.path("files");
+
         ArrayList<ArrayList<String>> links = new ArrayList<>();
 
-        for (JsonNode fileNode : GET(jsonEndpoint + "?show=torrent&id=" + torrentId).path("files")) {
-            JsonNode linksNode = fileNode.get("links");
+        if (!filesArray.isArray()) {
+            logger.error("No 'files' array found for torrent ID {}", torrentId);
+            throw new RuntimeException("Invalid JSON");
+        }
+
+        for (JsonNode fileNode : filesArray) {
+            JsonNode linksNode = fileNode.path("links");
             if (linksNode != null && linksNode.isObject()) {
-                ArrayList<String> singleLinkList = new ArrayList<>();
-                linksNode.fields().forEachRemaining(entry -> singleLinkList.add(entry.getValue().asText()));
-                links.add(singleLinkList);
+                for (Map.Entry<String, JsonNode> entry : linksNode.properties()) {
+                    JsonNode valueNode = entry.getValue();
+                    ArrayList<String> innerList = new ArrayList<>();
+                    if (valueNode.isArray()) {
+                        for (JsonNode part : valueNode) {
+                            innerList.add(part.asText());
+                        }
+                    } else {
+                        innerList.add(valueNode.asText());
+                    }
+                    if (!innerList.isEmpty()) {
+                        links.add(innerList);
+                    }
+                }
             }
         }
+
+        logger.trace("Final links list: {}", links);
 
         return new DownloadLinks(links, query);
     }
 
     // I really tried to get RestTemplate to work here but for some reason it just didn't -_-
     private JsonNode GET(String URL) {
+        logger.trace("Url: {}", URL);
         HttpResponse<String> response;
         try (HttpClient client = HttpClient.newBuilder().build()) {
 
@@ -142,7 +171,7 @@ public class DownloadService {
             throw new RuntimeException(e);
         }
 
-        System.out.println("Raw response body: " + response.body());
+        //logger.trace("Raw response: {}", response.body());
 
         ObjectMapper mapper = new ObjectMapper();
         try {

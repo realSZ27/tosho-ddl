@@ -37,52 +37,59 @@ public class FileWatcherService implements Runnable {
                 WatchKey key = watchService.take();
 
                 for (WatchEvent<?> event : key.pollEvents()) {
-                    if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                        Path createdFile = folderPath.resolve((Path) event.context());
-                        File file = createdFile.toFile();
-                        String name = file.getName();
+                    if (event.kind() != StandardWatchEventKinds.ENTRY_CREATE) continue;
 
-                        if (name.toLowerCase().endsWith(".torrent")) {
-                            int extensionIndex = name.lastIndexOf('.');
-                            if (extensionIndex == -1) continue;
+                    Path createdFile = folderPath.resolve((Path) event.context());
+                    File file = createdFile.toFile();
+                    String name = file.getName();
 
-                            String title = name.substring(0, extensionIndex);
-                            logger.trace("Title is: {}", title);
-                            DownloadLinks links = downloadService.getLinks(title);
+                    if (!name.toLowerCase().endsWith(".torrent")) {
+                        logger.trace("New file wasn't torrent");
+                        continue;
+                    }
 
-                            if (links != null) {
-                                JDownloaderController jDownloader = new JDownloaderController(jdownloaderApiUrl);
-                                for (ArrayList<String> link : links.getLinksInPriority()) {
-                                    if (jDownloader.isLinkOnline(link)) {
-                                        jDownloader.download(link, downloadFolder);
-                                        logger.debug("Link \"{}\" is online", link);
-                                        break;
-                                    }
-                                }
+                    int extensionIndex = name.lastIndexOf('.');
+                    if (extensionIndex == -1) continue;
 
-                                if (!file.delete()) {
-                                    logger.error("Couldn't delete: {}", file.getName());
-                                } else {
-                                    logger.debug("Successfully deleted: {}", file.getName());
-                                }
-                            } else {
-                                logger.error("Couldn't find release in search.");
-                            }
-                        } else {
-                            logger.trace("New file wasn't torrent or nzb");
+                    String title = name.substring(0, extensionIndex);
+                    logger.trace("Title is: {}", title);
+
+                    DownloadLinks links = downloadService.getLinks(title);
+                    if (links == null) {
+                        logger.error("Couldn't find release in search.");
+                        continue;
+                    }
+
+                    JDownloaderController jDownloader = new JDownloaderController(jdownloaderApiUrl);
+
+                    for (ArrayList<String> link : links.getLinksInPriority()) {
+                        if (!jDownloader.isLinkOnline(link)) {
+                            logger.trace("Link \"{}\" is not online... Trying next host", link);
+                            continue;
                         }
+
+                        jDownloader.download(link, downloadFolder);
+                        logger.debug("Link \"{}\" is online", link);
+                        break;
+                    }
+
+                    if (!file.delete()) {
+                        logger.error("Couldn't delete: {}", file.getName());
+                    } else {
+                        logger.debug("Successfully deleted: {}", file.getName());
                     }
                 }
 
-                boolean valid = key.reset();
-                if (!valid) break;
+                if (!key.reset()) break;
             }
 
         } catch (IOException e) {
-            logger.error("Error accessing Sonarr blackhole folder");
-            throw new RuntimeException("Can't access blackhole folder");
+            logger.error("Error accessing Sonarr blackhole folder", e);
+            throw new RuntimeException("Can't access blackhole folder", e);
         } catch (InterruptedException e) {
-            logger.error("Filesystem watch service was interrupted");
+            logger.error("Filesystem watch service was interrupted", e);
+            Thread.currentThread().interrupt();
         }
     }
+
 }
