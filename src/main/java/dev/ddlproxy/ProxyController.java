@@ -73,7 +73,15 @@ public class ProxyController {
     public String handleRequest(@RequestParam MultiValueMap<String, String> allParams) {
         LOGGER.debug("Got request for: {}", allParams.toString());
         String type = allParams.getFirst("t");
-        return "caps".equalsIgnoreCase(type) ? CAPABILITIES_XML : downloadService.handleQuery(allParams);
+        if ("caps".equalsIgnoreCase(type)) {
+            return CAPABILITIES_XML;
+        }
+        try {
+            return downloadService.handleQuery(allParams);
+        } catch (Exception ex) {
+            LOGGER.error("Error handling query: {}", allParams, ex);
+            return "<error>Unable to process the request</error>";
+        }
     }
 
     @GetMapping("/download/{filename}")
