@@ -1,13 +1,14 @@
 # Disclamers
 - I am an inexperienced programmer, if you have any CONSTRUCTIVE feedback, please say something!
-- Although I intend to maintain this app as long as it's useful, I have other things like school to keep up with.
+- Although I intend to maintain this app as long as I can, I have other things to keep up with.
 - For now, I'm calling this a beta. It works fine for me, but there are probably dozens of bugs that need to be fixed before I can call it good.
 
 # AnimeTosho DDL Proxy
 Gives Sonarr a valid Torznab feed to pick releases from, and picks up which one it chose via Torrent Blackhole. Then, downloads the release with JDownloader.
 
 ## Limitations
-- Links expire quickly on AnimeTosho, so pretty much only new releases work. Unfortunately, there's nothing I can do about this
+- Links expire quickly on AnimeTosho, so pretty much only new releases work. Unfortunately, there's nothing I can do about this.
+- Links aren't checked for availability until after they are chosen. This means that sonarr might choose a release that can't be downloaded.
 
 # Setup
 The easiest way to set this up is through Docker, although you can also use the jars provided in the releases tab.
