@@ -1,10 +1,9 @@
 package dev.ddlproxy.model;
 
-import dev.ddlproxy.config.HostBlacklistProperties;
-import dev.ddlproxy.config.HostPriorityProperties;
+import dev.ddlproxy.config.HostBlacklistContext;
+import dev.ddlproxy.config.HostPriorityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,11 +24,6 @@ public final class DownloadLinks {
 
     private static final Logger logger = LoggerFactory.getLogger(DownloadLinks.class);
 
-    @Autowired
-    private HostPriorityProperties hostPriorityProperties;
-    @Autowired
-    private HostBlacklistProperties hostBlacklistProperties;
-
     public DownloadLinks(
             ArrayList<ArrayList<String>> links,
             String title
@@ -47,7 +41,7 @@ public final class DownloadLinks {
 
             private int getPriority(String link) {
                 String finalLink = link.toLowerCase();
-                return hostPriorityProperties.getMapping().entrySet().stream()
+                return HostPriorityContext.get().getMapping().entrySet().stream()
                         .filter(entry -> finalLink.contains(entry.getKey()))
                         .map(Map.Entry::getValue)
                         .findFirst()
@@ -56,10 +50,11 @@ public final class DownloadLinks {
         });
 
         // quick fix for blacklisting hosts that require cloudflare
-        links.removeIf(innerList -> !innerList.isEmpty() &&
-                hostBlacklistProperties.getHosts().stream()
-                        .anyMatch(blacklisted -> innerList.getFirst().toLowerCase().contains(blacklisted))
-        );
+        links.removeIf(innerList -> !innerList.isEmpty() && (
+                HostBlacklistContext.get().getHosts().stream().anyMatch(
+                        domain -> innerList.getFirst().toLowerCase().contains(domain.toLowerCase())
+                )
+        ));
 
         logger.trace("Final links list: {}", links);
         return links;
