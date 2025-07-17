@@ -31,10 +31,6 @@ jib {
     }
 
     container {
-        jvmFlags = listOf(
-            "-Dspring.config.additional-location=file:/config/"
-        )
-
         labels = mapOf(
             "maintainer" to "SZ27 (https://github.com/realSZ27)",
             "org.opencontainers.image.title" to "ToshoDDL",
