@@ -44,18 +44,20 @@ services:
       - ./config/downloads:/output:rw
 ~~~
 ### Environment Variables
-If you are using the raw .jar, the environment variables can be passed through the command line by changing them from `THIS_FORM=` to `--this.form=`.
+If you are using the raw .jar, the environment variables can be passed through the command line by changing them from `THIS_FORM=` to `--this.form=`. Spring boot's [relaxed binding](https://github.com/spring-projects/spring-boot/wiki/Relaxed-Binding-2.0) rules apply to all variables.
 
 Most of these don't need to be changed.
 
-| Variable                   | Description                                                                                                        | Default                |
-|----------------------------|--------------------------------------------------------------------------------------------------------------------|------------------------|
-| JDOWNLOADER_API_URL        | The URL that the app will use to contact JDownloader.                                                              | http://localhost:3128/ |
-| BASE_URL                   | The URL that the app will serve the fake .torrent file from.                                                       | http://localhost:8080/ |
-| DOWNLOAD_FOLDER            | The folder where JDownloader will save the files to.                                                               | /downloads             |
-| BLACKHOLE_FOLDER           | The folder the app will look for .torrent files in.                                                                | /blackhole             |
-| SERVER_PORT                | The port the server will run on.                                                                                   | 8080                   |
-| LOGGING_LEVEL_DEV_DDLPROXY | Log level. This is technically just a normal Spring boot variable, but it's useful so I thought I'd put it on here | INFO                   |
+| Variable                   | Description                                                                                                                                                                                                                 | Default                                                                                |
+|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| JDOWNLOADER_API_URL        | The URL that the app will use to contact JDownloader.                                                                                                                                                                       | http://localhost:3128/                                                                 |
+| BASE_URL                   | The URL that the app will serve the fake .torrent file from.                                                                                                                                                                | http://localhost:8080/                                                                 |
+| DOWNLOAD_FOLDER            | The folder where JDownloader will save the files to.                                                                                                                                                                        | /downloads                                                                             |
+| BLACKHOLE_FOLDER           | The folder the app will look for .torrent files in.                                                                                                                                                                         | /blackhole                                                                             |
+| HOST_PRIORITY_\<host\>     | Change a host's priority. The lower the number the higher the priority. Remember to follow spring's [relaxed binding](https://github.com/spring-projects/spring-boot/wiki/Relaxed-Binding-2.0#environment-variables) rules. | HOST_PRIORITY_GOFILE=1<br/>HOST_PRIORITY_BUZZHEAVIER=2<br/>HOST_PRIORITY_KRAKENFILES=3 |
+| HOST_BLACKLIST_HOSTS       | Comma separated list of hosts to blacklist.                                                                                                                                                                                 | HOST_BLACKLIST_HOSTS=akirabox                                                          |
+| SERVER_PORT                | The port the server will run on.                                                                                                                                                                                            | 8080                                                                                   |
+| LOGGING_LEVEL_DEV_DDLPROXY | Log level. This is technically just a normal Spring boot variable, but it's useful so I thought I'd put it on here                                                                                                          | INFO                                                                                   |
 
 ## Setup Sonarr
 1. In the `Download Clients` settings page, add a new `Torrent Blackhole` and set the `Torrent Folder` and `Watch Folder` to your blackhole and downloads folders respectively. Make sure Sonarr can access these folders, of course.

@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "dev.ddlproxy"
-version = "1.2.0"
+version = "1.3.0"
 
 java {
     toolchain {
@@ -31,6 +31,10 @@ jib {
     }
 
     container {
+        jvmFlags = listOf(
+            "-Dspring.config.additional-location=file:/config/"
+        )
+
         labels = mapOf(
             "maintainer" to "SZ27 (https://github.com/realSZ27)",
             "org.opencontainers.image.title" to "ToshoDDL",

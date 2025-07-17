@@ -1,5 +1,7 @@
 package dev.ddlproxy;
 
+import dev.ddlproxy.config.HostBlacklistProperties;
+import dev.ddlproxy.config.HostPriorityProperties;
 import dev.ddlproxy.service.DownloadService;
 import dev.ddlproxy.service.FileWatcherService;
 import jakarta.annotation.PostConstruct;
@@ -8,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -26,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 
 @SpringBootApplication
 @RestController
+@EnableConfigurationProperties({HostPriorityProperties.class, HostBlacklistProperties.class})
 public class ProxyController {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyController.class);
     private static final String CAPABILITIES_XML = """
