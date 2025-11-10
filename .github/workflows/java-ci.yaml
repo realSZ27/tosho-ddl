@@ -10,8 +10,16 @@ on:
     tags:
       - '**'
     branches:
-      - 'develop'
-      - 'master'
+      - '**'
+
+  pull_request:
+    paths:
+      - src/**
+      - .github/**
+      - build.gradle.kts
+      - settings.gradle.kts
+    branches:
+      - '**'
 
 jobs:
   build:
@@ -67,30 +75,28 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
+          BRANCH_NAME="${GITHUB_REF_NAME}"
+          
+          # If it's a PR, handle the PR branch
           if [[ "${GITHUB_REF}" == refs/pull/*/merge ]]; then
             PR_NUMBER=$(echo "${GITHUB_REF}" | sed -E 's#refs/pull/([0-9]+)/merge#\1#')
+            echo "Building PR #${PR_NUMBER}"
         
-            ./gradlew jib \
-              -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:pr-${PR_NUMBER}
-        
-            ./gradlew jib \
-              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:pr-${PR_NUMBER}
+            # Tag Docker image with PR number
+            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:pr-${PR_NUMBER}
+            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:pr-${PR_NUMBER}
           
-          elif [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
-            ./gradlew jib \
-              -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:develop
-        
-            ./gradlew jib \
-              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:develop
+          # If the branch is not "main", tag it with the branch name
+          elif [[ "${BRANCH_NAME}" != "main" && "${BRANCH_NAME}" != "master" ]]; then
+            echo "Building branch: ${BRANCH_NAME}"
+            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:${BRANCH_NAME}
+            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:${BRANCH_NAME}
           
-          elif [[ "${GITHUB_REF_NAME}" == "master" ]]; then
-            ./gradlew jib \
-              -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl \
-              -Djib.to.tags=${VERSION},latest
-        
-            ./gradlew jib \
-              -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl \
-              -Djib.to.tags=${VERSION},latest
+          # If it's the "main" or "master" branch, tag it with version and latest
+          elif [[ "${BRANCH_NAME}" == "main" || "${BRANCH_NAME}" == "master" ]]; then
+            echo "Building main/master branch"
+            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl -Djib.to.tags=${VERSION},latest
+            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl -Djib.to.tags=${VERSION},latest
           fi
         env:
           GITHUB_ACTOR: ${{ github.actor }}
