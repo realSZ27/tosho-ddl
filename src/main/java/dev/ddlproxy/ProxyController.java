@@ -37,7 +37,7 @@ public class ProxyController {
                 <searching>
                     <search available="yes" supportedParams="q"/>
                     <tv-search available="yes" supportedParams="q,ep,season"/>
-                    <movie-search available="no" supportedParams="q"/>
+                    <movie-search available="yes" supportedParams="q"/>
                 </searching>
                 <categories>
                     <category id="5070" name="Anime" description="Anime"/>
