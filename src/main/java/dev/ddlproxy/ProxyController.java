@@ -2,7 +2,6 @@ package dev.ddlproxy;
 
 import dev.ddlproxy.service.DownloadService;
 import dev.ddlproxy.service.FileWatcherService;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +11,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets;
 @SpringBootApplication
 @RestController
 public class ProxyController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProxyController.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProxyController.class);
     private static final String CAPABILITIES_XML = """
             <caps>
                 <server version="1.0" title="AnimeTosho DDL Proxy" strapline="AnimeTosho DDLs for Sonarr" url="https://github.com/realSZ27"/>
@@ -45,6 +45,9 @@ public class ProxyController {
                 </categories>
             </caps>
             """;
+
+    private int retryCount = 0;
+    private final int MAX_RETRY_ATTEMPTS = 10;
 
     private final String jdownloaderApiUrl;
     private final String sonarrDownloadFolder;
@@ -71,7 +74,7 @@ public class ProxyController {
 
     @GetMapping(value = "/api", produces = MediaType.APPLICATION_XML_VALUE)
     public String handleRequest(@RequestParam MultiValueMap<String, String> allParams) {
-        LOGGER.debug("Got request for: {}", allParams.toString());
+        logger.debug("Got request for: {}", allParams.toString());
         String type = allParams.getFirst("t");
         if ("caps".equalsIgnoreCase(type)) {
             return CAPABILITIES_XML;
@@ -79,7 +82,7 @@ public class ProxyController {
         try {
             return downloadService.handleQuery(allParams);
         } catch (Exception ex) {
-            LOGGER.error("Error handling query: {}", allParams, ex);
+            logger.error("Error handling query: {}", allParams, ex);
             return "<error>Unable to process the request</error>";
         }
     }
@@ -101,9 +104,21 @@ public class ProxyController {
         }
     }
 
-    @PostConstruct
+    // extra recovery protection
+    @Scheduled(fixedRate = 10000)
     public void startWatcher() {
-        Runnable watcher = new FileWatcherService(sonarrBlackholeFolder, sonarrDownloadFolder, jdownloaderApiUrl, downloadService);
-        new Thread(watcher).start();
+        try {
+            Runnable watcher = new FileWatcherService(sonarrBlackholeFolder, sonarrDownloadFolder, jdownloaderApiUrl, downloadService);
+            new Thread(watcher).start();
+            retryCount = 0;
+        } catch (Exception e) {
+            retryCount++;
+            logger.error("Failed to start the file watcher, retrying... (Attempt {}/{}). Error {}", retryCount, MAX_RETRY_ATTEMPTS, e);
+            
+            if (retryCount >= MAX_RETRY_ATTEMPTS) {
+                logger.error("Max retry attempts reached. Exiting application...");
+                System.exit(1);
+            }
+        }
     }
 }
