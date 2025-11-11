@@ -141,7 +141,7 @@ public class DownloadService {
 
         if (!filesArray.isArray()) {
             logger.error("No 'files' array found for torrent ID {}", torrentId);
-            return null;
+            return new DownloadLinks(new ArrayList<>(), query);
         }
 
         for (JsonNode fileNode : filesArray) {
