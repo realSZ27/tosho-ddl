@@ -2,6 +2,8 @@ package dev.ddlproxy;
 
 import dev.ddlproxy.service.DownloadService;
 import dev.ddlproxy.service.FileWatcherService;
+import jakarta.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 @RestController
@@ -105,7 +108,8 @@ public class ProxyController {
     }
 
     // extra recovery protection
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 10, timeUnit = TimeUnit.SECONDS)
+    @PostConstruct
     public void startWatcher() {
         try {
             Runnable watcher = new FileWatcherService(sonarrBlackholeFolder, sonarrDownloadFolder, jdownloaderApiUrl, downloadService);
