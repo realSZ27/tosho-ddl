@@ -71,6 +71,8 @@ public class FileWatcherService implements Runnable {
         } catch (InterruptedException e) {
             logger.error("Filesystem watch service was interrupted", e);
             Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            logger.error("Unexpected error in file watcher service", e);
         }
     }
 
