@@ -1,8 +1,9 @@
 package dev.ddlproxy.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+
 import dev.ddlproxy.model.DownloadLinks;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -111,7 +112,14 @@ public class DownloadService {
         String jsonEndpoint = "https://feed.animetosho.org/json";
         String finalUrl = jsonEndpoint + "?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
 
-        JsonNode searchResults = GET(finalUrl);
+        JsonNode searchResults = JsonNodeFactory.instance.objectNode();;
+
+        try {
+            searchResults = GET(finalUrl);
+        } catch (IOException | InterruptedException e) {
+            logger.error("error getting searchResults: {}", e);
+        }
+        
         if (!searchResults.isArray() || searchResults.isEmpty()) {
             logger.warn("No results found for query: {}", query);
             return new DownloadLinks(new ArrayList<>(), query);
@@ -120,14 +128,20 @@ public class DownloadService {
         int torrentId = searchResults.get(0).get("id").asInt();
         logger.trace("Torrent ID is: {}", torrentId);
 
-        JsonNode torrentData = GET(jsonEndpoint + "?show=torrent&id=" + torrentId);
+        JsonNode torrentData = JsonNodeFactory.instance.objectNode();
+        try {
+            torrentData = GET(jsonEndpoint + "?show=torrent&id=" + torrentId);
+        } catch (IOException | InterruptedException e) {
+            logger.error("error getting data for torrent id {}: {}", torrentId, e);
+        }
+
         JsonNode filesArray = torrentData.path("files");
 
         ArrayList<ArrayList<String>> links = new ArrayList<>();
 
         if (!filesArray.isArray()) {
             logger.error("No 'files' array found for torrent ID {}", torrentId);
-            throw new RuntimeException("Invalid JSON");
+            return null;
         }
 
         for (JsonNode fileNode : filesArray) {
@@ -156,28 +170,21 @@ public class DownloadService {
     }
 
     // I really tried to get RestTemplate to work here but for some reason it just didn't -_-
-    private JsonNode GET(String URL) {
+    private JsonNode GET(String URL) throws IOException, InterruptedException {
         logger.trace("Url: {}", URL);
         HttpResponse<String> response;
-        try (HttpClient client = HttpClient.newBuilder().build()) {
+        HttpClient client = HttpClient.newBuilder().build();
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(URL))
-                    .GET()
-                    .build();
-
-            response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(URL))
+                .GET()
+                .build();
+        
+        response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         //logger.trace("Raw response: {}", response.body());
 
         ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.readTree(response.body());
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        return mapper.readTree(response.body());
     }
 }
