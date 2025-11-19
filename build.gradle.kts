@@ -10,6 +10,7 @@ plugins {
 
 group = "dev.ddlproxy"
 version = "1.2.1"
+version = "1.2.1"
 
 java {
     toolchain {
@@ -23,6 +24,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.jsoup:jsoup:1.21.2")
     implementation("org.jsoup:jsoup:1.21.2")
 }
 
