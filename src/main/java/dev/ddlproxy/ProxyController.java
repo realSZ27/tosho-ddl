@@ -98,6 +98,11 @@ public class ProxyController {
                 throw new FileNotFoundException("fake.torrent not found");
             }
             byte[] fileContent = is.readAllBytes();
+
+            if (fileContent == null) {
+                throw new RuntimeException("could not read content of torrent file");
+            }
+
             ByteArrayResource resource = new ByteArrayResource(fileContent);
             return ResponseEntity.ok()
                     .contentLength(fileContent.length)
