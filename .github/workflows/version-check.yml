@@ -1,0 +1,56 @@
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the pull request
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.13
+
+      # Step to extract version from the PR branch
+      - name: Extract version from PR branch
+        id: pr_version
+        run: |
+          VERSION=$(./gradlew properties -q | grep "^version:" | awk '{print $2}')
+          echo "PR_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted PR version: $VERSION"
+
+      # Step to fetch and checkout the master branch
+      - name: Checkout master branch
+        run: |
+          git fetch origin master
+          git checkout origin/master
+
+      # Step to extract version from the master branch
+      - name: Extract version from master branch
+        id: master_version
+        run: |
+          VERSION_MASTER=$(./gradlew properties -q | grep "^version:" | awk '{print $2}')
+          echo "MASTER_VERSION=$VERSION_MASTER" >> $GITHUB_ENV
+          echo "Extracted master branch version: $VERSION_MASTER"
+
+      # Step to compare versions and fail the build if they match
+      - name: Compare versions and prevent merge if version matches
+        run: |
+          if [ "$PR_VERSION" == "$MASTER_VERSION" ]; then
+            echo "Error: The version in the PR ($PR_VERSION) is the same as the master branch version ($MASTER_VERSION). Please bump the version before merging."
+            exit 1
+          fi
