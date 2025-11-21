@@ -36,7 +36,7 @@ public class JDownloaderController {
         addLink(link.toString());
 
         String result;
-        int maxRetries = 10;
+        int maxRetries = 100;
         int attempt = 0;
 
         do {
@@ -123,7 +123,7 @@ public class JDownloaderController {
             JsonNode dataArray = rootNode.path("data");
 
             if (!dataArray.isArray() || dataArray.isEmpty()) {
-                logger.warn("No data returned from linkgrabber query");
+                logger.debug("No data returned from linkgrabber query");
                 return "UNKNOWN";
             }
 
