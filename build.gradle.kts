@@ -2,7 +2,7 @@ import java.time.Instant
 
 plugins {
     id("java")
-    id("com.gradleup.shadow") version "8.3.1"
+    id("com.gradleup.shadow") version "9.3.1"
     id("org.springframework.boot") version "3.5.7"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.cloud.tools.jib") version "3.5.1"
