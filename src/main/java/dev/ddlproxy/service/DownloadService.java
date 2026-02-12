@@ -1,8 +1,8 @@
 package dev.ddlproxy.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 import dev.ddlproxy.model.DownloadLinks;
 
@@ -167,10 +167,10 @@ public class DownloadService {
                     ArrayList<String> innerList = new ArrayList<>();
                     if (valueNode.isArray()) {
                         for (JsonNode part : valueNode) {
-                            innerList.add(part.asText());
+                            innerList.add(part.asString());
                         }
                     } else {
-                        innerList.add(valueNode.asText());
+                        innerList.add(valueNode.asString());
                     }
                     if (!innerList.isEmpty()) {
                         links.add(innerList);

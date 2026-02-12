@@ -1,7 +1,7 @@
 package dev.ddlproxy.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -131,7 +131,7 @@ public class JDownloaderController {
             boolean allOnline = true;
 
             for (JsonNode data : dataArray) {
-                String availability = data.path("availability").asText();
+                String availability = data.path("availability").asString();
                 if (!availability.equalsIgnoreCase("ONLINE")) {
                     allOnline = false;
                     if (availability.equalsIgnoreCase("OFFLINE")) {
