@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import dev.ddlproxy.model.DownloadLinks;
+
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -74,11 +76,18 @@ public class DownloadService {
                 }
             }
 
-            Document doc = Jsoup.connect(queryString.toString())
+            Connection.Response response = Jsoup.connect(queryString.toString())
                     .ignoreContentType(true)
                     .parser(Parser.xmlParser())
                     .timeout(10000)
-                    .get();
+                    .execute();
+
+            if (response.statusCode() != 200) {
+                throw new IOException("Upstream returned " + response.statusCode() +
+                                      " body: " + response.body());
+            }
+
+            Document doc = response.parse();
 
             Elements items = doc.select("item");
 
@@ -102,7 +111,13 @@ public class DownloadService {
 
             return doc.toString();
         } catch (IOException e) {
-            return "<error><description>" + e.getMessage() + "</description></error>";
+            Document errorDoc = Document.createShell("");
+            errorDoc.outputSettings().syntax(Document.OutputSettings.Syntax.xml);
+
+            Element error = errorDoc.body().appendElement("error");
+            error.appendElement("description").text(e.getMessage());
+
+            return errorDoc.body().html();
         } catch (Exception e) {
             return "<error><description>Unexpected server error</description></error>";
         }
@@ -119,7 +134,7 @@ public class DownloadService {
         } catch (IOException | InterruptedException e) {
             logger.error("error getting searchResults: {}", e);
         }
-        
+
         if (!searchResults.isArray() || searchResults.isEmpty()) {
             logger.warn("No results found for query: {}", query);
             return new DownloadLinks(new ArrayList<>(), query);
@@ -179,7 +194,7 @@ public class DownloadService {
                 .uri(URI.create(URL))
                 .GET()
                 .build();
-        
+
         response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         //logger.trace("Raw response: {}", response.body());
