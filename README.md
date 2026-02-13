@@ -22,8 +22,8 @@ The easiest way to set this up is through Docker, although you can also use the 
 > [!NOTE]  
 > You don't have to use this container, or any container for that matter. Any JDownloader instance will work. Just make sure you have properly set `JDOWNLOADER_API_URL` and `BASE_URL` so that JDownloader can contact the app, and vice versa.
 
-> [!NOTE]
-> Byparr helps deal with hosts behind Cloudflare. It probably won't work 100% of the time, but it's the best we can do.
+[//]: # (> [!NOTE])
+[//]: # (> Byparr helps deal with hosts behind Cloudflare. It probably won't work 100% of the time, but it's the best we can do.)
 
 ~~~yaml
 services:
@@ -54,6 +54,11 @@ services:
     image: ghcr.io/thephaseless/byparr:latest
     restart: unless-stopped
 ~~~
+[//]: # (  # Optional, only if you want hosts that are behind cloudflare.)
+[//]: # (  byparr:)
+[//]: # (    container_name: byparr)
+[//]: # (    image: ghcr.io/thephaseless/byparr:latest)
+[//]: # (    restart: unless-stopped)
 ### Environment Variables
 
 > [!IMPORTANT]  
@@ -107,12 +112,8 @@ In `Advanced Settings`, turn on `Deprecated Api`, off `Deprecated Api Localhost 
 
 ![jdownloader.png](images/jdownloader.png)
 
-<hr>
+[//]: # (<hr>)
 
-**If** you installed byparr, go to `Connection Manager`, click add, enter `byparr` in the `Host/Port` box, and change the port to `8191`. Leave username and password blank. Then click ok.
+[//]: # (**If** you installed byparr, go to `Connection Manager`, click add, enter `byparr` in the `Host/Port` box, and change the port to `8191`. Leave username and password blank. Then click ok.)
 
-![byparr 1.png](images/byparr%201.png)
-
-Then move the new proxy up as shown below.
-
-![byparr 2.png](images/byparr%202.png)
+[//]: # (Then move the new proxy up as shown below.)

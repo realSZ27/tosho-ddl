@@ -20,6 +20,7 @@ on:
       - settings.gradle.kts
     branches:
       - '**'
+  workflow_dispatch:
 
 jobs:
   build:
