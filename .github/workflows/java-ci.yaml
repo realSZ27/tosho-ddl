@@ -84,20 +84,20 @@ jobs:
             echo "Building PR #${PR_NUMBER}"
         
             # Tag Docker image with PR number
-            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:pr-${PR_NUMBER}
-            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:pr-${PR_NUMBER}
+            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:pr-${PR_NUMBER} --no-configuration-cache
+            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:pr-${PR_NUMBER} --no-configuration-cache
           
           # If the branch is not "main", tag it with the branch name
           elif [[ "${BRANCH_NAME}" != "main" && "${BRANCH_NAME}" != "master" ]]; then
             echo "Building branch: ${BRANCH_NAME}"
-            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:${BRANCH_NAME}
-            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:${BRANCH_NAME}
+            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl:${BRANCH_NAME} --no-configuration-cache
+            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl:${BRANCH_NAME} --no-configuration-cache
           
           # If it's the "main" or "master" branch, tag it with version and latest
           elif [[ "${BRANCH_NAME}" == "main" || "${BRANCH_NAME}" == "master" ]]; then
             echo "Building main/master branch"
-            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl -Djib.to.tags=${VERSION},latest
-            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl -Djib.to.tags=${VERSION},latest
+            ./gradlew jib -Djib.to.image=ghcr.io/${OWNER_LC}/tosho-ddl -Djib.to.tags=${VERSION},latest --no-configuration-cache
+            ./gradlew jib -Djib.to.image=docker.io/${DOCKERHUB_USERNAME}/tosho-ddl -Djib.to.tags=${VERSION},latest --no-configuration-cache
           fi
         env:
           GITHUB_ACTOR: ${{ github.actor }}
