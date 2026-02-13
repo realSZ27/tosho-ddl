@@ -2,14 +2,14 @@ import java.time.Instant
 
 plugins {
     id("java")
-    id("com.gradleup.shadow") version "8.3.1"
-    id("org.springframework.boot") version "3.5.7"
+    id("com.gradleup.shadow") version "9.3.1"
+    id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.google.cloud.tools.jib") version "3.5.1"
+    id("com.google.cloud.tools.jib") version "3.5.2"
 }
 
 group = "dev.ddlproxy"
-version = "1.2.2"
+version = "1.2.3"
 
 java {
     toolchain {
@@ -23,7 +23,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.jsoup:jsoup:1.21.2")
+    implementation("org.jsoup:jsoup:1.22.1")
 }
 
 jib {
