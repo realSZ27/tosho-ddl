@@ -59,12 +59,16 @@ class AnimeToshoSource(
         }
     }
 
-    private fun processResult(result: JsonNode): Release {
+    private fun processResult(result: JsonNode): Release? {
+        val status = result.path("status").asString()
+        if (status.equals("complete", ignoreCase = true))
+            return null
+
         val torrentId = result.path("id").asInt()
         val title = result.path("title").asString()
         val webpageLink = result.path("link").asString()
         val publishTime = Instant.fromEpochSeconds(result.path("timestamp").asLong())
-        val size = result.path("total_size").asInt()
+        val size = result.path("total_size").asLong()
 
         return Release(
             title = title,

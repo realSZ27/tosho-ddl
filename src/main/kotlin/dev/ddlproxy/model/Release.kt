@@ -15,5 +15,5 @@ data class Release(
     val webpageLink: String? = null,
     val identifier: String,
     val pubDate: Instant = Clock.System.now(),
-    val fileSize: Int? = null
+    val fileSize: Long? = null
 )
