@@ -64,13 +64,15 @@ class AnimeToshoSource(
         val title = result.path("title").asString()
         val webpageLink = result.path("link").asString()
         val publishTime = Instant.fromEpochSeconds(result.path("timestamp").asLong())
+        val size = result.path("total_size").asInt()
 
         return Release(
             title = title,
             source = name,
             webpageLink = webpageLink,
             identifier = torrentId.toString(),
-            pubDate = publishTime
+            pubDate = publishTime,
+            fileSize = size
         )
     }
 

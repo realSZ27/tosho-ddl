@@ -12,7 +12,8 @@ data class LinkGroup(
 data class Release(
     val title: String,
     val source: AppConfig.Source,
-    val webpageLink: String,
+    val webpageLink: String? = null,
     val identifier: String,
     val pubDate: Instant = Clock.System.now(),
+    val fileSize: Int? = null
 )

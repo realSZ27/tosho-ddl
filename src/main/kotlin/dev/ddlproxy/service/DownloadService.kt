@@ -167,7 +167,8 @@ class DownloadService(
                     .format(release.pubDate.toJavaInstant().atOffset(ZoneOffset.UTC))
             )
 
-            appendText(item, "comments", release.webpageLink)
+            if (release.webpageLink != null)
+                appendText(item, "comments", release.webpageLink)
 
             fun torznabAttr(name: String, value: String) {
                 val attr = doc.createElement("torznab:attr")
@@ -182,6 +183,9 @@ class DownloadService(
             torznabAttr("seeders", "10000")
             torznabAttr("leechers", "0")
             torznabAttr("peers", "10000")
+
+            if (release.fileSize != null)
+                torznabAttr("size", release.fileSize.toString())
 
             val enclosure = doc.createElement("enclosure")
             enclosure.setAttribute("url", downloadUrl)
