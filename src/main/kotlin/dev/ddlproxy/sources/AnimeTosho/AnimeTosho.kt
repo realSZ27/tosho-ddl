@@ -61,8 +61,10 @@ class AnimeToshoSource(
 
     private fun processResult(result: JsonNode): Release? {
         val status = result.path("status").asString()
-        if (status.equals("complete", ignoreCase = true))
+        if (!status.equals("complete", ignoreCase = true)) {
+            logger.trace("Release is not done uploading")
             return null
+        }
 
         val torrentId = result.path("id").asInt()
         val title = result.path("title").asString()
