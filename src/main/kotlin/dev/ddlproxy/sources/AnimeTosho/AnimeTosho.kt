@@ -1,5 +1,6 @@
 package dev.ddlproxy.sources.AnimeTosho
 
+import dev.ddlproxy.AppConfig
 import dev.ddlproxy.model.Release
 import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.model.LinkGroup
@@ -12,14 +13,13 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
-import kotlin.time.Clock
 import kotlin.time.Instant
 
 class AnimeToshoSource(
     private val objectMapper: ObjectMapper = ObjectMapper()
 ) : DownloadSource {
 
-    override val name = "animetosho"
+    override val name = AppConfig.Source.AnimeTosho
 
     private val logger = LoggerFactory.getLogger(AnimeToshoSource::class.java)
     private val client: HttpClient = HttpClient.newBuilder().build()

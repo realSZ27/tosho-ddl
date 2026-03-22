@@ -1,5 +1,7 @@
 package dev.ddlproxy.model
 
+import dev.ddlproxy.AppConfig
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 data class LinkGroup(
@@ -9,8 +11,8 @@ data class LinkGroup(
 
 data class Release(
     val title: String,
-    val source: String,
+    val source: AppConfig.Source,
     val webpageLink: String,
     val identifier: String,
-    val pubDate: Instant,
+    val pubDate: Instant = Clock.System.now(),
 )

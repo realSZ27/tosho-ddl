@@ -61,7 +61,7 @@ class DownloadService(
     }
 
     fun downloadRelease(sourceName: String, identifier: String) {
-        val source = sources.find { it.name == sourceName }
+        val source = sources.find { it.name.name == sourceName }
 
         if (source == null) {
             logger.error("Unknown source: {}", sourceName)

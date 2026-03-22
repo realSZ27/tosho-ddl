@@ -5,7 +5,6 @@ package dev.ddlproxy
 import dev.ddlproxy.service.DownloadService
 import dev.ddlproxy.service.FileWatcherService
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.core.io.ByteArrayResource
@@ -66,19 +65,27 @@ class ProxyController(
         }
     }
 
-    @GetMapping("/download/{filename}")
-    fun downloadFile(@PathVariable filename: String): ResponseEntity<ByteArrayResource> {
-        val decodedFilename = URLDecoder.decode(filename, StandardCharsets.UTF_8)
+    @GetMapping("/download/{payload}")
+    fun downloadFile(@PathVariable payload: String): ResponseEntity<ByteArrayResource> {
+        val decodedFilename = URLDecoder.decode(payload, StandardCharsets.UTF_8)
 
         val stream = javaClass.classLoader.getResourceAsStream("fake.torrent")
             ?: throw FileNotFoundException("fake.torrent not found")
 
-        val fileContent = stream.use { it.readAllBytes() }
+        val originalBytes = stream.use { it.readAllBytes() }
 
-        val resource = ByteArrayResource(fileContent)
+        val marker = "##META##".toByteArray(StandardCharsets.UTF_8)
+        val extraBytes = decodedFilename.toByteArray(StandardCharsets.UTF_8)
+
+        val combinedBytes = ByteArray(originalBytes.size + marker.size + extraBytes.size)
+        System.arraycopy(originalBytes, 0, combinedBytes, 0, originalBytes.size)
+        System.arraycopy(marker, 0, combinedBytes, originalBytes.size, marker.size)
+        System.arraycopy(extraBytes, 0, combinedBytes, originalBytes.size + marker.size, extraBytes.size)
+
+        val resource = ByteArrayResource(combinedBytes)
 
         return ResponseEntity.ok()
-            .contentLength(fileContent.size.toLong())
+            .contentLength(combinedBytes.size.toLong())
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$decodedFilename\"")
             .contentType(MediaType.parseMediaType("application/x-bittorrent"))
             .body(resource)

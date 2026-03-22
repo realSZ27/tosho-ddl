@@ -1,7 +1,9 @@
 package dev.ddlproxy.model
 
+import dev.ddlproxy.AppConfig
+
 interface DownloadSource {
-    val name: String
+    val name: AppConfig.Source
 
     suspend fun search(query: String): List<Release>
     suspend fun getRecent(): List<Release>

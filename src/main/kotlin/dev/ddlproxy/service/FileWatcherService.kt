@@ -119,13 +119,44 @@ class FileWatcherService(
     private suspend fun processTorrentFile(path: Path) {
         val fileName = path.fileName.toString()
 
-        val encoded = fileName.substringBeforeLast('.', "")
-        if (encoded.isEmpty()) return
+        val fileBytes = try {
+            Files.readAllBytes(path)
+        } catch (e: Exception) {
+            logger.error("Failed to read file: {}", fileName, e)
+            return
+        }
+
+        try {
+            Files.deleteIfExists(path)
+        } catch (e: Exception) {
+            logger.error("Delete failed: {}", fileName, e)
+        }
+
+        fun ByteArray.indexOfSequence(sequence: ByteArray): Int {
+            outer@ for (i in 0..this.size - sequence.size) {
+                for (j in sequence.indices) {
+                    if (this[i + j] != sequence[j]) continue@outer
+                }
+                return i
+            }
+            return -1
+        }
+
+        val marker = "##META##".toByteArray(StandardCharsets.UTF_8)
+
+        val markerIndex = fileBytes.indexOfSequence(marker)
+        if (markerIndex == -1) {
+            logger.error("Marker not found in file: {}", fileName)
+            return
+        }
+
+        val payloadStart = markerIndex + marker.size
+        val payloadBytes = fileBytes.copyOfRange(payloadStart, fileBytes.size)
 
         val decoded = try {
-            URLDecoder.decode(encoded, StandardCharsets.UTF_8)
+            String(payloadBytes, StandardCharsets.UTF_8)
         } catch (e: Exception) {
-            logger.error("Decode failed: {}", fileName, e)
+            logger.error("Payload decode failed: {}", fileName, e)
             return
         }
 
@@ -139,12 +170,6 @@ class FileWatcherService(
             launch {
                 downloadService.downloadRelease(parts[0], parts[1])
             }
-        }
-        
-        try {
-            Files.deleteIfExists(path)
-        } catch (e: Exception) {
-            logger.error("Delete failed: {}", fileName, e)
         }
     }
 }

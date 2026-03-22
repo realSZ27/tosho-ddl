@@ -16,4 +16,8 @@ class AppConfig {
     fun downloadSources(): List<DownloadSource> = listOf(
         AnimeToshoSource()
     )
+
+    enum class Source {
+        AnimeTosho
+    }
 }
