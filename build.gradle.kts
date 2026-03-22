@@ -2,10 +2,12 @@ import java.time.Instant
 
 plugins {
     id("java")
-    id("com.gradleup.shadow") version "9.3.1"
-    id("org.springframework.boot") version "4.0.3"
+    id("org.jetbrains.kotlin.jvm") version "2.3.20"
+    id("org.jetbrains.kotlin.plugin.spring") version "2.3.20"
+
+    id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.google.cloud.tools.jib") version "3.5.2"
+    id("com.google.cloud.tools.jib") version "3.5.3"
 }
 
 group = "dev.ddlproxy"
@@ -17,13 +19,22 @@ java {
     }
 }
 
+kotlin {
+    jvmToolchain(21)
+}
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
+
     implementation("org.jsoup:jsoup:1.22.1")
+
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.10.2")
 }
 
 jib {
