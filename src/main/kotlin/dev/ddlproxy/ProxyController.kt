@@ -74,8 +74,9 @@ class ProxyController(
 
         val originalBytes = stream.use { it.readAllBytes() }
 
+        val cleanName = decodedFilename.substringBeforeLast(".")
         val marker = "##META##".toByteArray(StandardCharsets.UTF_8)
-        val extraBytes = decodedFilename.toByteArray(StandardCharsets.UTF_8)
+        val extraBytes = cleanName.toByteArray(StandardCharsets.UTF_8)
 
         val combinedBytes = ByteArray(originalBytes.size + marker.size + extraBytes.size)
         System.arraycopy(originalBytes, 0, combinedBytes, 0, originalBytes.size)
