@@ -30,7 +30,7 @@ class JDownloaderController(
 
     private val logger = LoggerFactory.getLogger(JDownloaderController::class.java)
 
-    private val jdownloaderApiUrl = jdownloaderApiUrlRaw.removeSuffix("/")
+    private val jdownloaderApiUrl = jdownloaderApiUrlRaw.trim().trimEnd('/')
 
     fun isLinkOnline(links: LinkGroup): Boolean {
         addLinks(links.links)

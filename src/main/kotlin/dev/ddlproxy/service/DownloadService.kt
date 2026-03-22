@@ -24,11 +24,13 @@ import kotlin.time.toJavaInstant
 @Service
 class DownloadService(
     private val sources: List<DownloadSource>,
-    @param:Value($$"${base.url}") private val thisBaseUrl: String,
+    @param:Value($$"${base.url}") private val rawBaseUrl: String,
     private val jDownloaderController: JDownloaderController,
     @param:Value($$"${download.folder}") private val downloadFolder: String
 ) {
     private val logger = LoggerFactory.getLogger(DownloadService::class.java)
+
+    private val thisBaseUrl = rawBaseUrl.trim().trimEnd('/')
 
     suspend fun handleQuery(params: MultiValueMap<String, String>): String {
         return try {
