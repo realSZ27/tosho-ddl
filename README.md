@@ -47,6 +47,12 @@ services:
     volumes:
       - ./config/jdownloader:/config:rw
       - ./config/downloads:/output:rw
+  
+  # Optional, only if you want hosts that are behind cloudflare.
+  byparr:
+    container_name: byparr
+    image: ghcr.io/thephaseless/byparr:latest
+    restart: unless-stopped
 ~~~
 [//]: # (  # Optional, only if you want hosts that are behind cloudflare.)
 [//]: # (  byparr:)
