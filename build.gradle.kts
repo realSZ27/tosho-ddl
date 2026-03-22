@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "dev.ddlproxy"
-version = "1.2.3"
+version = "2.0.0"
 
 java {
     toolchain {
