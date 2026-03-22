@@ -77,14 +77,10 @@ class DownloadService(
 
         val sortedLinks = links.sortedBy { source.getHostPriority(it.host) }
 
-        val result = sortedLinks.map { group ->
-            if (jDownloaderController.isLinkOnline(group)) group else null
-        }.firstOrNull { it != null }
-
-        if (result != null) {
+        sortedLinks.firstOrNull { jDownloaderController.isLinkOnline(it) }?.let { result ->
             logger.debug("Downloading from: {}", result.links)
             jDownloaderController.download(result, downloadFolder)
-        } else {
+        } ?: run {
             logger.warn("No valid links found for {}:{}", sourceName, identifier)
         }
     }
