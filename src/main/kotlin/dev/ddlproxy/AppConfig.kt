@@ -1,6 +1,7 @@
 package dev.ddlproxy
 
 import dev.ddlproxy.model.DownloadSource
+import dev.ddlproxy.service.JDownloaderController
 import dev.ddlproxy.sources.AnimeTosho.AnimeToshoSource
 import dev.ddlproxy.sources.TokyoInsider.TokyoInsiderSource
 import io.ktor.client.HttpClient
@@ -50,9 +51,11 @@ class AppConfig {
     fun animeToshoSource(
         client: HttpClient,
         objectMapper: ObjectMapper,
+        jDownloaderController: JDownloaderController
     ) = AnimeToshoSource(
         client,
         objectMapper,
+        jDownloaderController
     )
 
     @Bean
@@ -64,8 +67,10 @@ class AppConfig {
     )
     fun tokyoInsiderSource(
         client: HttpClient,
+        jDownloaderController: JDownloaderController
     ) = TokyoInsiderSource(
         client,
+        jDownloaderController
     )
 
     enum class Source {

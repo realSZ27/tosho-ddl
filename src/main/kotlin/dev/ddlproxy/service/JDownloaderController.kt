@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import tools.jackson.databind.ObjectMapper
 import org.springframework.http.HttpStatus
-import java.nio.charset.StandardCharsets
 
 sealed class LinkState {
     object Online : LinkState()
@@ -25,7 +24,8 @@ sealed class LinkState {
 class JDownloaderController(
     private val restTemplate: RestTemplate,
     private val objectMapper: ObjectMapper,
-    @Value($$"${jdownloader.api.url}") jdownloaderApiUrlRaw: String
+    @Value($$"${jdownloader.api.url}") jdownloaderApiUrlRaw: String,
+    @param:Value($$"${download.folder}") private val downloadFolder: String
 ) {
 
     private val logger = LoggerFactory.getLogger(JDownloaderController::class.java)
@@ -166,13 +166,27 @@ class JDownloaderController(
         logger.debug("Linkgrabber list cleared successfully")
     }
 
-    fun download(links: LinkGroup, destinationFolder: String) {
+    /**
+     * Starts downloading the given [LinkGroup] if online.
+     *
+     * @param linkGroup The link group to download.
+     * @param skipOnlineCheck Do not check if link is online before attempting download
+     *
+     * Use [download] with a [List] of [LinkGroup]s if you have multiple and want
+     * to automatically pick the first online link group.
+     */
+    fun download(linkGroup: LinkGroup, skipOnlineCheck: Boolean = false) {
+        if (!skipOnlineCheck && !isLinkOnline(linkGroup)) {
+            logger.warn("No valid links found for {}", linkGroup)
+            return
+        }
+
         clearList()
 
         val payload = mapOf(
-            "links" to links.links.joinToString("\n"),
+            "links" to linkGroup.links.joinToString("\n"),
             "autostart" to true,
-            "destinationFolder" to destinationFolder,
+            "destinationFolder" to downloadFolder,
             "enabled" to true,
             "autoExtract" to true,
             "overwritePackagizerRules" to true
@@ -186,9 +200,25 @@ class JDownloaderController(
             )
 
             logger.trace("JDownloader response: {}", response.body)
-            logger.info("Started download: {}", links)
+            logger.info("Started download: {}", linkGroup)
         } catch (e: Exception) {
-            logger.error("Failed to start download: {}", links, e)
+            logger.error("Failed to start download: {}", linkGroup, e)
         }
+    }
+
+    /**
+     * Starts downloading the first online [LinkGroup] in the given list.
+     *
+     * @param linkGroups The list of link groups to try. This should be sorted in the order you want them checked.
+     *
+     * Use [download] with a single [LinkGroup] if you only have one to download.
+     */
+    fun download(linkGroups: List<LinkGroup>) {
+        val link = linkGroups.firstOrNull { isLinkOnline(it) } ?: run {
+            logger.warn("No valid links found for {}", linkGroups)
+            return
+        }
+
+        download(link)
     }
 }

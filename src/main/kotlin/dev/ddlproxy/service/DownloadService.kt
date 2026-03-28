@@ -2,7 +2,6 @@ package dev.ddlproxy.service
 
 import dev.ddlproxy.model.Release
 import dev.ddlproxy.model.DownloadSource
-import dev.ddlproxy.model.LinkGroup
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -10,7 +9,6 @@ import org.springframework.util.MultiValueMap
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.*
-import org.jsoup.nodes.Entities
 import java.io.StringWriter
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -19,14 +17,11 @@ import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
-import kotlin.time.toJavaInstant
 
 @Service
 class DownloadService(
     private val sources: List<DownloadSource>,
     @param:Value($$"${base.url}") private val rawBaseUrl: String,
-    private val jDownloaderController: JDownloaderController,
-    @param:Value($$"${download.folder}") private val downloadFolder: String
 ) {
     private val logger = LoggerFactory.getLogger(DownloadService::class.java)
 
@@ -34,7 +29,27 @@ class DownloadService(
 
     suspend fun handleQuery(params: MultiValueMap<String, String>): String {
         return try {
-            val query = buildQuery(params)
+            val qValues = mutableListOf<String>()
+            var season: Int? = null
+            var episode: Int? = null
+
+            for ((key, values) in params) {
+                when {
+                    key.equals("season", true) && values.isNotEmpty() -> {
+                        season = values.first().toIntOrNull()
+                    }
+
+                    key.equals("ep", true) && values.isNotEmpty() -> {
+                        episode = values.first().toIntOrNull()
+                    }
+
+                    key.equals("q", true) -> qValues.addAll(values)
+                }
+            }
+
+            if (qValues.isEmpty()) return ""
+
+            val query = qValues.joinToString(" ")
 
             val results = coroutineScope {
                 sources.map { source ->
@@ -43,7 +58,7 @@ class DownloadService(
                             if (query.isBlank()) {
                                 source.getRecent()
                             } else {
-                                source.search(query)
+                                source.search(query, season, episode)
                             }
                         }.getOrElse {
                             logger.warn("Source failed: {}", source.name, it)
@@ -69,50 +84,11 @@ class DownloadService(
         }
 
         val links = try {
-            source.getLinks(identifier)
+            source.download(identifier)
         } catch (e: Exception) {
             logger.error("Failed to fetch links for {}:{}", sourceName, identifier, e)
             return
         }
-
-        val sortedLinks = links.sortedBy { source.getHostPriority(it.host) }
-
-        sortedLinks.firstOrNull { jDownloaderController.isLinkOnline(it) }?.let { result ->
-            logger.debug("Downloading from: {}", result.links)
-            jDownloaderController.download(result, downloadFolder)
-        } ?: run {
-            logger.warn("No valid links found for {}:{}", sourceName, identifier)
-        }
-    }
-
-    private fun buildQuery(params: MultiValueMap<String, String>): String {
-        val qValues = mutableListOf<String>()
-        var season: String? = null
-        var episode: String? = null
-
-        for ((key, values) in params) {
-            when {
-                key.equals("season", true) && values.isNotEmpty() -> {
-                    season = "S%02d".format(values.first().toIntOrNull() ?: return "")
-                }
-
-                key.equals("ep", true) && values.isNotEmpty() -> {
-                    episode = "E%02d".format(values.first().toIntOrNull() ?: return "")
-                }
-
-                key.equals("q", true) -> qValues.addAll(values)
-            }
-        }
-
-        if (qValues.isEmpty()) return ""
-
-        val suffix = buildString {
-            if (season != null) append(season)
-            if (episode != null) append(episode)
-            if (isNotEmpty()) insert(0, " ")
-        }
-
-        return qValues.joinToString(" ") { it + suffix }
     }
 
     private fun buildTorznabFeed(releases: List<Release>): String {
