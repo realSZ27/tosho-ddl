@@ -37,20 +37,27 @@ class TokyoInsiderSource(
     private val baseUrl = "https://www.tokyoinsider.com"
 
     override suspend fun search(query: String): List<Release> {
-        logger.info("Starting search for query: '$query'")
+        logger.debug("Starting search for query: '$query'")
         val url = "$baseUrl/anime/list"
 
         val document = fetch(url)
 
         val entries = document
             .select("div[class~=c_h2b?] a[href^=/anime/]")
-            .map { a ->
+            .mapNotNull { a ->
                 val title = a.text().trim()
                 val url = a.attr("abs:href")
+
+                if (url.isBlank()) {
+                    logger.warn("Url for {} is blank", title)
+                    logger.trace(a.outerHtml())
+                    return@mapNotNull null
+                }
+
                 title to url
             }
 
-        logger.info("Found ${entries.size} entries on the anime list page")
+        logger.debug("Found ${entries.size} entries on the anime list page")
 
         val top = entries
             .asSequence()
@@ -63,7 +70,7 @@ class TokyoInsiderSource(
             .take(3)
             .toList()
 
-        logger.info("Top ${top.size} matching entries selected")
+        logger.debug("Top ${top.size} matching entries selected")
 
         if (top.isEmpty()) {
             logger.warn("No entries matched query '$query'")
@@ -79,7 +86,7 @@ class TokyoInsiderSource(
                 }
             }
             deferredResults.awaitAll().flatten().also {
-                logger.info("Total releases found: ${it.size}")
+                logger.debug("Total releases found: ${it.size}")
             }
         }
     }
@@ -99,7 +106,7 @@ class TokyoInsiderSource(
                     val releaseDiv = episodePage.selectFirst(
                         "div.c_h2:has(a:contains($title)), div.c_h2b:has(a:contains($title))"
                     ) ?: run {
-                        logger.warn("Missing release div")
+                        logger.debug("Missing release div.")
                         return@async null
                     }
 
@@ -155,7 +162,7 @@ class TokyoInsiderSource(
             }
 
 
-        logger.info("Extracted ${releases.size} releases from episode page")
+        logger.debug("Extracted ${releases.size} releases from episode page")
         return releases
     }
 
@@ -269,6 +276,6 @@ class TokyoInsiderSource(
             }
         }.bodyAsText()
 
-        return Jsoup.parse(body, parser)
+        return Jsoup.parse(body, baseUrl, parser)
     }
 }

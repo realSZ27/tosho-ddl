@@ -4,6 +4,7 @@
 - For now, I'm calling this a beta. It works fine for me, but there are probably dozens of bugs to fix before I can call it fully functional.
 
 # DDL Proxy
+Despite the name, this supports more than just AnimeTosho. 
 Gives Sonarr a valid Torznab feed to pick releases from, and picks up which one it chose via Torrent Blackhole. Then, downloads the release with JDownloader.
 
 ## Supported Sites
