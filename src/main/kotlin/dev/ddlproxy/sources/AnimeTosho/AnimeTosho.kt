@@ -30,14 +30,17 @@ class AnimeToshoSource(
     private val baseUrl = "https://feed.animetosho.org/json"
 
     override suspend fun search(query: String, season: Int?, episode: Int?): List<Release> {
+        logger.trace("handling search for S${season}E${episode}")
         var fullQuery = query
 
         if (season != null) {
-            fullQuery += " S$season"
+            val paddedSeason = season.toString().padStart(2, '0')
+            fullQuery += " S$paddedSeason"
         }
 
         if (episode != null) {
-            fullQuery += "E$episode"
+            val paddedEpisode = episode.toString().padStart(2, '0')
+            fullQuery += "E$paddedEpisode"
         }
 
         val results = getJson("$baseUrl?q=${encode(fullQuery)}")
