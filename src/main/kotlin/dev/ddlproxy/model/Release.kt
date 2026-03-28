@@ -1,8 +1,7 @@
 package dev.ddlproxy.model
 
 import dev.ddlproxy.AppConfig
-import kotlin.time.Clock
-import kotlin.time.Instant
+import java.time.Instant
 
 data class LinkGroup(
     val host: String,
@@ -13,7 +12,9 @@ data class Release(
     val title: String,
     val source: AppConfig.Source,
     val webpageLink: String? = null,
-    val identifier: String,
-    val pubDate: Instant = Clock.System.now(),
-    val fileSize: Long? = null
+    // a string that uniquely indentifies a release
+    // it is 100% up to the source to decide what to do with it 
+    val identifier: String, 
+    val pubDate: Instant = Instant.now(),
+    val fileSize: Long? = null // in bytes
 )

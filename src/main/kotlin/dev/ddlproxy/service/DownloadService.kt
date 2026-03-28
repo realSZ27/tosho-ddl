@@ -60,7 +60,7 @@ class DownloadService(
         }
     }
 
-    fun downloadRelease(sourceName: String, identifier: String) {
+    suspend fun downloadRelease(sourceName: String, identifier: String) {
         val source = sources.find { it.name.name == sourceName }
 
         if (source == null) {
@@ -160,7 +160,7 @@ class DownloadService(
             appendText(
                 item, "pubDate",
                 DateTimeFormatter.RFC_1123_DATE_TIME
-                    .format(release.pubDate.toJavaInstant().atOffset(ZoneOffset.UTC))
+                    .format(release.pubDate.atOffset(ZoneOffset.UTC))
             )
 
             if (release.webpageLink != null)

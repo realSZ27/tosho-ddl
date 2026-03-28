@@ -4,25 +4,26 @@ import dev.ddlproxy.AppConfig
 import dev.ddlproxy.model.Release
 import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.model.LinkGroup
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsText
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 import java.net.URI
 import java.net.URLEncoder
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
-import kotlin.time.Instant
+import java.time.Instant
 
 class AnimeToshoSource(
-    private val objectMapper: ObjectMapper = ObjectMapper()
+    private val client: HttpClient,
+    private val objectMapper: ObjectMapper
 ) : DownloadSource {
 
     override val name = AppConfig.Source.AnimeTosho
 
     private val logger = LoggerFactory.getLogger(AnimeToshoSource::class.java)
-    private val client: HttpClient = HttpClient.newBuilder().build()
 
     private val baseUrl = "https://feed.animetosho.org/json"
 
@@ -69,7 +70,7 @@ class AnimeToshoSource(
         val torrentId = result.path("id").asInt()
         val title = result.path("title").asString()
         val webpageLink = result.path("link").asString()
-        val publishTime = Instant.fromEpochSeconds(result.path("timestamp").asLong())
+        val publishTime = Instant.ofEpochSecond(result.path("timestamp").asLong())
         val size = result.path("total_size").asLong()
 
         return Release(
@@ -82,7 +83,7 @@ class AnimeToshoSource(
         )
     }
 
-    override fun getLinks(identifier: String): List<LinkGroup> {
+    override suspend fun getLinks(identifier: String): List<LinkGroup> {
         val torrentId = identifier.toIntOrNull()
         if (torrentId == null) {
             logger.error("Invalid identifier: {}", identifier)
@@ -132,16 +133,13 @@ class AnimeToshoSource(
         return linkGroups
     }
 
-    private fun getJson(url: String): JsonNode {
+    private suspend fun getJson(url: String): JsonNode {
         logger.trace("GET {}", url)
 
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .GET()
-            .build()
+        val response = client.get(url)
+        val body = response.bodyAsText()
 
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        return objectMapper.readTree(response.body())
+        return objectMapper.readTree(body)
     }
 
     private fun encode(value: String): String =

@@ -32,8 +32,8 @@ services:
     image: ghcr.io/realsz27/tosho-ddl:latest # Docker Hub mirrors are also available at sz27/tosho-ddl
     restart: unless-stopped
     environment:
-      - JDOWNLOADER_API_URL: http://jdownloader-2:3128/
-      - BASE_URL: http://tosho-ddl:8080/ # This is needed because sonarr needs somewhere do download the torrent from.
+      - JDOWNLOADER_API_URL=http://jdownloader-2:3128/
+      - BASE_URL=http://tosho-ddl:8080/ # This is needed because sonarr needs somewhere do download the torrent from.
     volumes:
       - ./config/downloads:/downloads
       - ./config/blackhole:/blackhole
@@ -47,12 +47,6 @@ services:
     volumes:
       - ./config/jdownloader:/config:rw
       - ./config/downloads:/output:rw
-  
-  # Optional, only if you want hosts that are behind cloudflare.
-  byparr:
-    container_name: byparr
-    image: ghcr.io/thephaseless/byparr:latest
-    restart: unless-stopped
 ~~~
 [//]: # (  # Optional, only if you want hosts that are behind cloudflare.)
 [//]: # (  byparr:)
