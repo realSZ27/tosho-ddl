@@ -1,12 +1,12 @@
 import java.time.Instant
 
 group = "dev.ddlproxy"
-version = "2.0.0"
+version = "2.1.0"
 
 val ktor_version = "3.2.1"
 val kotlin_coroutines_version = "1.10.2"
 val jsoup_version = "1.22.1"
-val graaljs_version = "25.0.2"
+//val graaljs_version = "25.0.2"
 
 plugins {
     id("java")
@@ -17,8 +17,6 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.cloud.tools.jib") version "3.5.3"
 }
-
-
 
 java {
     toolchain {
@@ -46,8 +44,9 @@ dependencies {
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
 
-    implementation("org.graalvm.js:js:$graaljs_version")
-    implementation("org.graalvm.polyglot:polyglot:$graaljs_version")
+    // for AnimePahe
+    //implementation("org.graalvm.js:js:$graaljs_version")
+    //implementation("org.graalvm.polyglot:polyglot:$graaljs_version")
 }
 
 jib {
