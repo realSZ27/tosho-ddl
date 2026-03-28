@@ -1,6 +1,8 @@
 # Testing config
 /src/main/resources/application-testing.properties
+/config
 
+.kotlin
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar

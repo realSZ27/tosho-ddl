@@ -1,0 +1,21 @@
+services:
+  tosho-ddl:
+   container_name: tosho-ddl
+   image: ghcr.io/realsz27/tosho-ddl:latest # Docker Hub mirrors are also available at sz27/tosho-ddl
+   restart: unless-stopped
+   environment:
+     - JDOWNLOADER_API_URL=http://jdownloader-2:3128/
+     - BASE_URL=http://tosho-ddl:8080/ # This is needed because sonarr needs somewhere do download the torrent from.
+   volumes:
+     - ./config/downloads:/downloads
+     - ./config/blackhole:/blackhole
+  
+  jdownloader-2:
+   container_name: jdownloader-docker
+   image: jlesage/jdownloader-2
+   restart: unless-stopped
+   ports:
+     - 5800:5800
+   volumes:
+     - ./config/jdownloader:/config:rw
+     - ./config/downloads:/output:rw

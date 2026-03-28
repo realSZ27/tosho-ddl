@@ -3,8 +3,16 @@
 - Although I intend to maintain this app as long as I can, I have other things to keep up with.
 - For now, I'm calling this a beta. It works fine for me, but there are probably dozens of bugs to fix before I can call it fully functional.
 
-# AnimeTosho DDL Proxy
+# DDL Proxy
+Despite the name, this supports more than just AnimeTosho. 
 Gives Sonarr a valid Torznab feed to pick releases from, and picks up which one it chose via Torrent Blackhole. Then, downloads the release with JDownloader.
+
+## Supported Sites
+Currently the app supports:
+- AnimeTosho (will shut down soon)
+- TokyoInsider
+
+If you have a request, or want to add more yourself, open an issue or pr.
 
 ## Limitations
 - Links expire quickly on AnimeTosho, so pretty much only new releases work. Unfortunately, there's nothing I can do about this.
@@ -13,7 +21,7 @@ Gives Sonarr a valid Torznab feed to pick releases from, and picks up which one 
 # Setup
 The easiest way to set this up is through Docker, although you can also use the jars provided in the releases tab.
 
-1. Make sure you have [Docker](https://docs.docker.com/engine/install) and [Docker Compose](https://docs.docker.com/compose/install/#scenario-two-install-the-compose-plugin).
+1. Make sure you have [Docker](https://docs.docker.com/engine/install) and [Docker Compose](https://docs.docker.com/compose/install/).
 2. Make a `compose.yaml` file with these contents:
 
 > [!IMPORTANT]  
@@ -32,8 +40,8 @@ services:
     image: ghcr.io/realsz27/tosho-ddl:latest # Docker Hub mirrors are also available at sz27/tosho-ddl
     restart: unless-stopped
     environment:
-      - JDOWNLOADER_API_URL: http://jdownloader-2:3128/
-      - BASE_URL: http://tosho-ddl:8080/ # This is needed because sonarr needs somewhere do download the torrent from.
+      - JDOWNLOADER_API_URL=http://jdownloader-2:3128/
+      - BASE_URL=http://tosho-ddl:8080/ # This is needed because sonarr needs somewhere do download the torrent from.
     volumes:
       - ./config/downloads:/downloads
       - ./config/blackhole:/blackhole
@@ -47,18 +55,15 @@ services:
     volumes:
       - ./config/jdownloader:/config:rw
       - ./config/downloads:/output:rw
-  
-  # Optional, only if you want hosts that are behind cloudflare.
-  byparr:
-    container_name: byparr
-    image: ghcr.io/thephaseless/byparr:latest
-    restart: unless-stopped
 ~~~
 [//]: # (  # Optional, only if you want hosts that are behind cloudflare.)
 [//]: # (  byparr:)
 [//]: # (    container_name: byparr)
 [//]: # (    image: ghcr.io/thephaseless/byparr:latest)
 [//]: # (    restart: unless-stopped)
+
+If you would like to disable a source, you can add an evironment variable like: `APP_SOURCES_{SOURCE NAME}_ENABLED=false`. 
+
 ### Environment Variables
 
 > [!IMPORTANT]  
@@ -66,14 +71,15 @@ services:
 
 Most of these don't need to be changed.
 
-| Variable                   | Description                                                                                                        | Default                |
-|----------------------------|--------------------------------------------------------------------------------------------------------------------|------------------------|
-| JDOWNLOADER_API_URL        | The URL that the app will use to contact JDownloader.                                                              | http://localhost:3128/ |
-| BASE_URL                   | The URL that the app will serve the fake .torrent file from.                                                       | http://localhost:8080/ |
-| DOWNLOAD_FOLDER            | The folder where JDownloader will save the files to.                                                               | /downloads             |
-| BLACKHOLE_FOLDER           | The folder the app will look for .torrent files in.                                                                | /blackhole             |
-| SERVER_PORT                | The port the server will run on.                                                                                   | 8080                   |
-| LOGGING_LEVEL_DEV_DDLPROXY | Log level. This is technically just a normal Spring boot variable, but it's useful so I thought I'd put it on here | INFO                   |
+| Variable                          | Description                                                                                                                                                           | Default                |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| JDOWNLOADER_API_URL               | The URL that the app will use to contact JDownloader.                                                                                                                 | http://localhost:3128/ |
+| BASE_URL                          | The URL that the app will serve the fake .torrent file from.                                                                                                          | http://localhost:8080/ |
+| DOWNLOAD_FOLDER                   | The folder where JDownloader will save the files to.                                                                                                                  | /downloads             |
+| BLACKHOLE_FOLDER                  | The folder the app will look for .torrent files in.                                                                                                                   | /blackhole             |
+| SERVER_PORT                       | The port the server will run on.                                                                                                                                      | 8080                   |
+| LOGGING_LEVEL_DEV_DDLPROXY        | Log level. This is technically just a normal Spring boot variable, but it's useful so I thought I'd put it on here                                                    | INFO                   |
+| APP_SOURCES_{SOURCE NAME}_ENABLED | Set the enabled status for a particular source. Replace {SOURCE NAME} with the name of the source. The names are the same as [the list at the top](#supported-sites). | true (on all)          |
 
 ## Setup Sonarr
 
