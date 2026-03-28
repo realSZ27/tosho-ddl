@@ -4,6 +4,7 @@ import dev.ddlproxy.AppConfig
 import dev.ddlproxy.model.Release
 import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.model.LinkGroup
+import dev.ddlproxy.service.JDownloaderController
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -18,7 +19,8 @@ import java.time.Instant
 
 class AnimeToshoSource(
     private val client: HttpClient,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val jDownloaderController: JDownloaderController,
 ) : DownloadSource {
 
     override val name = AppConfig.Source.AnimeTosho
@@ -27,11 +29,21 @@ class AnimeToshoSource(
 
     private val baseUrl = "https://feed.animetosho.org/json"
 
-    override suspend fun search(query: String): List<Release> {
-        val results = getJson("$baseUrl?q=${encode(query)}")
+    override suspend fun search(query: String, season: Int?, episode: Int?): List<Release> {
+        var fullQuery = query
+
+        if (season != null) {
+            fullQuery += " S$season"
+        }
+
+        if (episode != null) {
+            fullQuery += "E$episode"
+        }
+
+        val results = getJson("$baseUrl?q=${encode(fullQuery)}")
 
         if (!results.isArray || results.isEmpty) {
-            logger.warn("No results found for query: {}", query)
+            logger.warn("No results found for query: {}", fullQuery)
             return emptyList()
         }
 
@@ -83,11 +95,11 @@ class AnimeToshoSource(
         )
     }
 
-    override suspend fun getLinks(identifier: String): List<LinkGroup> {
+    override suspend fun download(identifier: String) {
         val torrentId = identifier.toIntOrNull()
         if (torrentId == null) {
             logger.error("Invalid identifier: {}", identifier)
-            return emptyList()
+            return
         }
 
         val torrentData = getJson("$baseUrl?show=torrent&id=$torrentId")
@@ -96,10 +108,12 @@ class AnimeToshoSource(
 
         logger.trace("Extracted link groups: {}", linkGroups)
 
-        return linkGroups
+        val sortedLinks = linkGroups.sortedBy { getHostPriority(it.host) }
+
+        jDownloaderController.download(sortedLinks)
     }
 
-    override fun getHostPriority(host: String): Int {
+    private fun getHostPriority(host: String): Int {
         return when {
             host.contains("gofile", ignoreCase = true) -> 1
             host.contains("buzzheavier", ignoreCase = true) -> 2

@@ -4,6 +4,7 @@ import dev.ddlproxy.AppConfig
 import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.model.LinkGroup
 import dev.ddlproxy.model.Release
+import dev.ddlproxy.service.JDownloaderController
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
@@ -27,7 +28,8 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 class TokyoInsiderSource(
-    private val client: HttpClient
+    private val client: HttpClient,
+    private val jDownloaderController: JDownloaderController,
 ) : DownloadSource {
 
     override val name = AppConfig.Source.TokyoInsider
@@ -36,7 +38,7 @@ class TokyoInsiderSource(
 
     private val baseUrl = "https://www.tokyoinsider.com"
 
-    override suspend fun search(query: String): List<Release> {
+    override suspend fun search(query: String, season: Int?, episode: Int?): List<Release> {
         logger.debug("Starting search for query: '$query'")
         val url = "$baseUrl/anime/list"
 
@@ -118,8 +120,8 @@ class TokyoInsiderSource(
 
     }
 
-    override suspend fun getLinks(identifier: String): List<LinkGroup> {
-        return listOf(
+    override suspend fun download(identifier: String) {
+        jDownloaderController.download(
             LinkGroup(
                 host = "TokyoInsider",
                 links = listOf(identifier)
@@ -127,7 +129,7 @@ class TokyoInsiderSource(
         )
     }
 
-    private suspend fun extractReleases(animePageDoc: Document, query: String): List<Release> {
+    private suspend fun extractReleases(animePageDoc: Document, query: String, episode: Int? = null): List<Release> {
         logger.trace("Extracting releases from document")
         val episodes = animePageDoc
             .select(".download-link")
@@ -142,7 +144,9 @@ class TokyoInsiderSource(
         val top = episodes
             .asSequence()
             .map { (title, url) ->
-                val s = score(query, title)
+                val s = score(query, title) +
+                        if (episode != null && url.contains("/episode/$episode")) 100 else 0
+
                 Triple(title, url, s)
             }
             .filter { it.third > 0 }

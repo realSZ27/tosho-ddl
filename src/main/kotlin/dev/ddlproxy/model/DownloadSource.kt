@@ -5,9 +5,7 @@ import dev.ddlproxy.AppConfig
 interface DownloadSource {
     val name: AppConfig.Source
 
-    suspend fun search(query: String): List<Release>
+    suspend fun search(query: String, season: Int? = null, episode: Int? = null): List<Release>
     suspend fun getRecent(): List<Release>
-    suspend fun getLinks(identifier: String): List<LinkGroup>
-
-    fun getHostPriority(host: String): Int = Int.MAX_VALUE
+    suspend fun download(identifier: String)
 }
