@@ -6,7 +6,7 @@ version = "2.1.1"
 val ktor_version = "3.2.1"
 val kotlin_coroutines_version = "1.10.2"
 val jsoup_version = "1.22.1"
-//val graaljs_version = "25.0.2"
+val graaljs_version = "25.0.2"
 
 plugins {
     id("java")
@@ -45,8 +45,8 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:$ktor_version")
 
     // for AnimePahe
-    //implementation("org.graalvm.js:js:$graaljs_version")
-    //implementation("org.graalvm.polyglot:polyglot:$graaljs_version")
+    implementation("org.graalvm.js:js:$graaljs_version")
+    implementation("org.graalvm.polyglot:polyglot:$graaljs_version")
 }
 
 jib {
