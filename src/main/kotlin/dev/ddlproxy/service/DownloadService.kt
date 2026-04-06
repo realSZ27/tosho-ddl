@@ -47,8 +47,6 @@ class DownloadService(
                 }
             }
 
-            if (qValues.isEmpty()) return ""
-
             val query = qValues.joinToString(" ")
 
             val results = coroutineScope {
