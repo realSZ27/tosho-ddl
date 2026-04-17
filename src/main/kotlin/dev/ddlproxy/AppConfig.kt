@@ -3,8 +3,11 @@ package dev.ddlproxy
 import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.service.JDownloaderController
 import dev.ddlproxy.sources.AnimeTosho.AnimeToshoSource
+import dev.ddlproxy.sources.Hi10Anime.Hi10AnimeClient
 import dev.ddlproxy.sources.TokyoInsider.TokyoInsiderSource
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.cookies.AcceptAllCookiesStorage
+import io.ktor.client.plugins.cookies.HttpCookies
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -19,6 +22,7 @@ class AppConfig {
 
     @ConfigurationProperties(prefix = "app")
     data class AppProperties(
+        val seleniumUrl: String?,
         val sources: Map<Source, Map<String, Any>> = emptyMap()
     )
 
@@ -28,6 +32,9 @@ class AppConfig {
     @Bean
     fun httpClient() = HttpClient {
         expectSuccess = true
+        install(HttpCookies) {
+            storage = AcceptAllCookiesStorage()
+        }
     }
 
     @Bean
@@ -73,8 +80,28 @@ class AppConfig {
         jDownloaderController
     )
 
+    @Bean
+    @ConditionalOnProperty(
+        prefix = "app.sources.hi10Anime",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun hi10AnimeSource(
+        client: HttpClient,
+        jDownloaderController: JDownloaderController,
+        objectMapper: ObjectMapper,
+        props: AppProperties,
+    ) = Hi10AnimeClient(
+        client,
+        jDownloaderController,
+        objectMapper,
+        seleniumUrl = props.seleniumUrl?.trim()?.trimEnd('/') ?: ""
+    )
+
     enum class Source {
         AnimeTosho,
         TokyoInsider,
+        Hi10Anime,
     }
 }

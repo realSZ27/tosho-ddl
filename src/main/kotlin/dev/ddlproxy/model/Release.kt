@@ -14,7 +14,7 @@ data class Release(
     val webpageLink: String? = null,
     // a string that uniquely indentifies a release
     // it is 100% up to the source to decide what to do with it 
-    val identifier: String, 
+    val identifier: String,
     val pubDate: Instant = Instant.now(),
     val fileSize: Long? = null // in bytes
 )

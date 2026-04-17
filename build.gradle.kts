@@ -6,6 +6,8 @@ version = "2.1.2"
 val ktor_version = "3.2.1"
 val kotlin_coroutines_version = "1.10.2"
 val jsoup_version = "1.22.1"
+val seleniumVersion = "4.41.0"
+val webDriverManagerVersion = "6.3.3"
 //val graaljs_version = "25.0.2"
 
 plugins {
@@ -43,6 +45,10 @@ dependencies {
 
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
+
+    //implementation("org.seleniumhq.selenium:selenium-java:$seleniumVersion")
+    //implementation("io.github.bonigarcia:webdrivermanager:$webDriverManagerVersion")
+    implementation("com.microsoft.playwright:playwright:1.58.0")
 
     // for AnimePahe
     //implementation("org.graalvm.js:js:$graaljs_version")
