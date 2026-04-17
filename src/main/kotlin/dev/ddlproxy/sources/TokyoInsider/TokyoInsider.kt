@@ -206,8 +206,6 @@ class TokyoInsiderSource(
         val dateInstant = getInstant(dateRaw)
         val sizeLong = parseSizeToBytes(sizeRaw)
 
-        logger.trace("Parsed release -> title: $title, size: $sizeRaw, date: $dateRaw, download: $downloadUrl")
-
         return Release(
             title = title,
             source = AppConfig.Source.TokyoInsider,
@@ -215,9 +213,7 @@ class TokyoInsiderSource(
             identifier = downloadUrl,
             pubDate = dateInstant,
             fileSize = sizeLong
-        ).also {
-            logger.trace("Extracted release: $it")
-        }
+        )
     }
 
     private fun score(query: String, text: String): Int {

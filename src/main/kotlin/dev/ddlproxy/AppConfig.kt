@@ -2,6 +2,8 @@ package dev.ddlproxy
 
 import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.service.JDownloaderController
+import dev.ddlproxy.service.KwikDownloader
+import dev.ddlproxy.sources.AnimePahe.AnimePaheSource
 import dev.ddlproxy.sources.AnimeTosho.AnimeToshoSource
 import dev.ddlproxy.sources.TokyoInsider.TokyoInsiderSource
 import io.ktor.client.HttpClient
@@ -60,6 +62,23 @@ class AppConfig {
 
     @Bean
     @ConditionalOnProperty(
+        prefix = "app.sources.animePahe",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun animePaheSource(
+        client: HttpClient,
+        objectMapper: ObjectMapper,
+        kwikDownloader: KwikDownloader
+    ) = AnimePaheSource(
+        client,
+        objectMapper,
+        kwikDownloader
+    )
+
+    @Bean
+    @ConditionalOnProperty(
         prefix = "app.sources.tokyoInsider",
         name = ["enabled"],
         havingValue = "true",
@@ -76,5 +95,6 @@ class AppConfig {
     enum class Source {
         AnimeTosho,
         TokyoInsider,
+        AnimePahe,
     }
 }
