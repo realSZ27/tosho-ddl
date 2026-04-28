@@ -9,6 +9,7 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.nio.file.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.io.encoding.Base64
 
 @Service
 class FileWatcherService(
@@ -154,7 +155,8 @@ class FileWatcherService(
         val payloadBytes = fileBytes.copyOfRange(payloadStart, fileBytes.size)
 
         val decoded = try {
-            String(payloadBytes, StandardCharsets.UTF_8)
+            val decodedBytes = Base64.UrlSafe.decode(payloadBytes)
+            decodedBytes.decodeToString()
         } catch (e: Exception) {
             logger.error("Payload decode failed: {}", fileName, e)
             return
