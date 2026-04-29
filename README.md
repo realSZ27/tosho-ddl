@@ -9,8 +9,11 @@ Gives Sonarr a valid Torznab feed to pick releases from, and picks up which one 
 
 ## Supported Sites
 Currently the app supports:
-- AnimeTosho (will shut down soon)
-- TokyoInsider
+| Site Name    | Comments                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AnimeTosho   | Original site. Supports all features out of the box. Will shut down permanantly May 9th.                                                                                                                                                                                                                                                                                          |
+| TokyoInsider | Frequently goes down, and is user-submitted. However, it has many releases from good groups, and requires no setup.                                                                                                                                                                                                                                                               |
+| KayoAnime    | Requires setting up [Google Drive](https://support.jdownloader.org/en/knowledgebase/article/account-cookie-login-instructions) with JDownloader. Large library of mini encodes. Private folders are hit or miss. JDownloader says they don't work at all, but I've found some that do, so it's worth joining their group anyway (it's the same group for everything on the site). |
 
 If you have a request, or want to add more yourself, open an issue or pr.
 
@@ -29,9 +32,6 @@ The easiest way to set this up is through Docker, although you can also use the 
 
 > [!NOTE]  
 > You don't have to use this container, or any container for that matter. Any JDownloader instance will work. Just make sure you have properly set `JDOWNLOADER_API_URL` and `BASE_URL` so that JDownloader can contact the app, and vice versa.
-
-[//]: # (> [!NOTE])
-[//]: # (> Byparr helps deal with hosts behind Cloudflare. It probably won't work 100% of the time, but it's the best we can do.)
 
 ~~~yaml
 services:
@@ -56,11 +56,6 @@ services:
       - ./config/jdownloader:/config:rw
       - ./config/downloads:/output:rw
 ~~~
-[//]: # (  # Optional, only if you want hosts that are behind cloudflare.)
-[//]: # (  byparr:)
-[//]: # (    container_name: byparr)
-[//]: # (    image: ghcr.io/thephaseless/byparr:latest)
-[//]: # (    restart: unless-stopped)
 
 If you would like to disable a source, you can add an evironment variable like: `APP_SOURCES_{SOURCE NAME}_ENABLED=false`. 
 
@@ -117,9 +112,3 @@ Just to be sure, you can also set `Download Client` to the Torrent Blackhole wit
 In `Advanced Settings`, turn on `Deprecated Api`, off `Deprecated Api Localhost Only` and restart JDownloader.
 
 ![jdownloader.png](images/jdownloader.png)
-
-[//]: # (<hr>)
-
-[//]: # (**If** you installed byparr, go to `Connection Manager`, click add, enter `byparr` in the `Host/Port` box, and change the port to `8191`. Leave username and password blank. Then click ok.)
-
-[//]: # (Then move the new proxy up as shown below.)
