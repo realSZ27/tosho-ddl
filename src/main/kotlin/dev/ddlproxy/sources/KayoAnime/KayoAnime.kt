@@ -17,11 +17,13 @@ import org.jsoup.parser.Parser
 import org.slf4j.LoggerFactory
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 
 class KayoAnimeSource(
     private val client: HttpClient,
@@ -33,7 +35,37 @@ class KayoAnimeSource(
     private val logger = LoggerFactory.getLogger(KayoAnimeSource::class.java)
     private val baseUrl = "https://kayoanime.com"
 
+    // Caching because if you do a season search with anime numbering (not recommended),
+    // sonarr will spam the indexer with a request for each episode. Here we don't even
+    // do anything with that, so it would be pointless.
+    private data class CacheEntry(
+        val timestamp: Instant,
+        val results: List<Release>
+    )
+
+    private val searchCache = ConcurrentHashMap<String, CacheEntry>()
+
+    private val cacheTtl = Duration.ofMinutes(5)
+    private val maxCacheSize = 50
+
     override suspend fun search(query: String, season: Int?, episode: Int?): List<Release> {
+        val now = Instant.now()
+
+        // Check cache
+        val cacheKey = query.trim().lowercase()
+
+        searchCache[cacheKey]?.let { entry ->
+            if (Duration.between(entry.timestamp, now) < cacheTtl) {
+                logger.debug("Cache HIT for '$query'")
+                return entry.results
+            } else {
+                searchCache.remove(cacheKey)
+                logger.debug("Cache EXPIRED for '$query'")
+            }
+        }
+
+        logger.debug("Cache MISS for '$query'")
+
         val page = fetch("$baseUrl/?s=${encode(query)}")
 
         val (requestedEntries, normalEntries) = parsePostPage(page)
@@ -57,7 +89,22 @@ class KayoAnimeSource(
             (requestedDeferred + normalDeferred).awaitAll().flatten()
         }
 
-        return pages.flatMap { processPage(it) }
+        val results = pages.flatMap { processPage(it) }
+
+        searchCache[cacheKey] = CacheEntry(
+            timestamp = now,
+            results = results
+        )
+
+        if (searchCache.size > maxCacheSize) {
+            val oldestKey = searchCache.minByOrNull { it.value.timestamp }?.key
+            if (oldestKey != null) {
+                searchCache.remove(oldestKey)
+                logger.debug("Evicted oldest cache entry: '$oldestKey'")
+            }
+        }
+
+        return results
     }
 
     override suspend fun getRecent(): List<Release> {
@@ -173,16 +220,35 @@ class KayoAnimeSource(
     }
 
     private fun parseGlobalMeta(title: String): GlobalMeta {
-        val seasonRegex = Regex("""Season\s*(\d+)""", RegexOption.IGNORE_CASE)
+        val seasonRegex = Regex("""Season\s*(\d+(?:-\d+)?)""", RegexOption.IGNORE_CASE)
         val qualityRegex = Regex("""\b(480p|720p|1080p|2160p)\b""", RegexOption.IGNORE_CASE)
+        val sourceRegex = Regex("""\b(BluRay|WEB[- ]DL|HDRip|HEVC|x265|Dual Audio)\b""", RegexOption.IGNORE_CASE)
 
         val seasons = seasonRegex.findAll(title)
-            .map { it.groupValues[1].toInt() }
+            .map { it.groupValues[1] }
+            .flatMap { range ->
+                if (range.contains("-")) {
+                    val (a, b) = range.split("-").map { it.toInt() }
+                    (a..b).toList()
+                } else listOf(range.toInt())
+            }
             .toList()
 
         val quality = qualityRegex.find(title)?.value
 
-        return GlobalMeta(title.trim(), seasons, quality, null, emptyList())
+        val source = sourceRegex.findAll(title)
+            .map { it.value }
+            .distinct()
+            .joinToString(" ")
+            .ifBlank { null }
+
+        return GlobalMeta(
+            baseTitle = title.trim(),
+            seasons = seasons,
+            quality = quality,
+            source = source,
+            extras = emptyList()
+        )
     }
 
     private fun parseButtonMeta(label: String): ButtonMeta {
@@ -284,10 +350,14 @@ class KayoAnimeSource(
             .replace(Regex("""^\s*[\|\-]"""), "")
 
             // Remove multiple separators left behind
-            .replace(Regex("""\s*[\|\-]\s*"""), " ")
+            .replace(Regex("""\s*\+\s*"""), " ")
 
             // Normalize whitespace
             .replace(Regex("""\s+"""), " ")
+
+            // fix broken bracket artifacts like "+ Special)"
+            .replace(Regex("""\+\s*\)"""), "")
+            .replace(Regex("""\(\s*\+"""), "")
 
             .trim()
     }
