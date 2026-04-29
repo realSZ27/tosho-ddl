@@ -1,5 +1,6 @@
 package dev.ddlproxy.service
 
+import dev.ddlproxy.AppConfig
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -17,7 +18,8 @@ import kotlin.time.toDuration
 class FileWatcherService(
     @param:Value($$"${blackhole.folder}") private val blackholeFolder: String,
     @param:Value($$"${download.folder}") private val downloadFolder: String,
-    private val downloadService: DownloadService
+    private val downloadService: DownloadService,
+    private val appProperties: AppConfig.AppProperties
 ) : SmartLifecycle {
 
     companion object {
@@ -43,7 +45,8 @@ class FileWatcherService(
 
         job = scope.launch { runWatcher() }
 
-        cleanupJob = scope.launch { runCleanupLoop() }
+        if (appProperties.cleanupEnabled)
+            cleanupJob = scope.launch { runCleanupLoop() }
 
         logger.info("File watcher started")
     }

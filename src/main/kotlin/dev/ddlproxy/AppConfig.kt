@@ -20,7 +20,8 @@ class AppConfig {
 
     @ConfigurationProperties(prefix = "app")
     data class AppProperties(
-        val sources: Map<Source, Map<String, Any>> = emptyMap()
+        val sources: Map<Source, Map<String, Any>> = emptyMap(),
+        val cleanupEnabled: Boolean = true
     )
 
     @Bean

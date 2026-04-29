@@ -67,14 +67,15 @@ If you would like to disable a source, you can add an evironment variable like: 
 Most of these don't need to be changed.
 
 | Variable                          | Description                                                                                                                                                           | Default                |
-|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
-| JDOWNLOADER_API_URL               | The URL that the app will use to contact JDownloader.                                                                                                                 | http://localhost:3128/ |
-| BASE_URL                          | The URL that the app will serve the fake .torrent file from.                                                                                                          | http://localhost:8080/ |
-| DOWNLOAD_FOLDER                   | The folder where JDownloader will save the files to.                                                                                                                  | /downloads             |
-| BLACKHOLE_FOLDER                  | The folder the app will look for .torrent files in.                                                                                                                   | /blackhole             |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| JDOWNLOADER_API_URL               | URL used to communicate with the JDownloader API.                                                                                                                     | http://localhost:3128/ |
+| BASE_URL                          | Base URL where generated .torrent files are served.                                                                                                                   | http://localhost:8080/ |
+| DOWNLOAD_FOLDER                   | Directory where JDownloader saves downloaded files                                                                                                                    | /downloads             |
+| BLACKHOLE_FOLDER                  | Directory monitored for incoming .torrent files                                                                                                                       | /blackhole             |
 | SERVER_PORT                       | The port the server will run on.                                                                                                                                      | 8080                   |
-| LOGGING_LEVEL_DEV_DDLPROXY        | Log level. This is technically just a normal Spring boot variable, but it's useful so I thought I'd put it on here                                                    | INFO                   |
+| LOGGING_LEVEL_DEV_DDLPROXY        | Logging level for the application (Spring Boot logging config).                                                                                                       | INFO                   |
 | APP_SOURCES_{SOURCE NAME}_ENABLED | Set the enabled status for a particular source. Replace {SOURCE NAME} with the name of the source. The names are the same as [the list at the top](#supported-sites). | true (on all)          |
+| APP_CLEANUPENABLED                | Enables automatic deletion of old files in the download folder.                                                                                                       | true                   |
 
 ## Setup Sonarr
 
