@@ -17,6 +17,7 @@ import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
+import kotlin.io.encoding.Base64
 
 @Service
 class DownloadService(
@@ -180,10 +181,10 @@ class DownloadService(
     }
 
     private fun buildDownloadUrl(release: Release): String {
-        val encoded = URLEncoder.encode(
-            "${release.source}|${release.identifier}",
-            StandardCharsets.UTF_8
-        )
+        val raw = "${release.source}|${release.identifier}"
+        val encoded = Base64.UrlSafe
+            .encode(raw.encodeToByteArray())
+
         return "$thisBaseUrl/download/$encoded.torrent"
     }
 

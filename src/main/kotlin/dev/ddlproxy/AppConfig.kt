@@ -3,6 +3,7 @@ package dev.ddlproxy
 import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.service.JDownloaderController
 import dev.ddlproxy.sources.AnimeTosho.AnimeToshoSource
+import dev.ddlproxy.sources.KayoAnime.KayoAnimeSource
 import dev.ddlproxy.sources.TokyoInsider.TokyoInsiderSource
 import io.ktor.client.HttpClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -19,7 +20,8 @@ class AppConfig {
 
     @ConfigurationProperties(prefix = "app")
     data class AppProperties(
-        val sources: Map<Source, Map<String, Any>> = emptyMap()
+        val sources: Map<Source, Map<String, Any>> = emptyMap(),
+        val cleanupEnabled: Boolean = true
     )
 
     @Bean
@@ -73,8 +75,24 @@ class AppConfig {
         jDownloaderController
     )
 
+    @Bean
+    @ConditionalOnProperty(
+        prefix = "app.sources.kayoAnime",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun kayoAnimeSource(
+        client: HttpClient,
+        jDownloaderController: JDownloaderController
+    ) = KayoAnimeSource(
+        client,
+        jDownloaderController
+    )
+
     enum class Source {
         AnimeTosho,
         TokyoInsider,
+        KayoAnime,
     }
 }
