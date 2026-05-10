@@ -124,9 +124,24 @@ class KayoAnimeSource(
     }
 
     override suspend fun download(identifier: String) {
-        jDownloaderController.download(
-            LinkGroup("Google Drive", listOf(identifier))
-        )
+        if (identifier.contains("workers.dev")) {
+            val linksPage = fetch(identifier)
+            val links = linksPage.select(".list-group-item a")
+                .mapNotNull {
+                    it.attr("href").trim()
+                }
+
+            jDownloaderController.download(
+                LinkGroup(
+                    "Workers.dev",
+                    links
+                )
+            )
+        } else {
+            jDownloaderController.download(
+                LinkGroup("Google Drive", listOf(identifier))
+            )
+        }
     }
 
     private suspend fun handleRequested(entry: EntryStub): List<PageStub> {
