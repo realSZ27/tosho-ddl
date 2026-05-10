@@ -8,6 +8,7 @@ import dev.ddlproxy.service.JDownloaderController
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.request
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -124,8 +125,13 @@ class KayoAnimeSource(
     }
 
     override suspend fun download(identifier: String) {
-        if (identifier.contains("workers.dev")) {
-            val linksPage = fetch(identifier)
+        val redirectLink = client.get(identifier)
+            .request
+            .url
+            .toString()
+
+        if (redirectLink.contains("workers.dev")) {
+            val linksPage = fetch(redirectLink)
             val links = linksPage.select(".list-group-item a")
                 .mapNotNull {
                     it.attr("href").trim()
@@ -139,7 +145,7 @@ class KayoAnimeSource(
             )
         } else {
             jDownloaderController.download(
-                LinkGroup("Google Drive", listOf(identifier))
+                LinkGroup("Google Drive", listOf(redirectLink))
             )
         }
     }
