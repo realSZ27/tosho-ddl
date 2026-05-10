@@ -1,7 +1,7 @@
 import java.time.Instant
 
 group = "dev.ddlproxy"
-version = "2.2.0"
+version = "2.2.1"
 
 val ktor_version = "3.2.1"
 val kotlin_coroutines_version = "1.10.2"
@@ -62,7 +62,7 @@ jib {
             "org.opencontainers.image.created" to Instant.now().toString(),
             "org.opencontainers.image.url" to "https://github.com/realSZ27/tosho-ddl",
             "org.opencontainers.image.source" to "https://github.com/realSZ27/tosho-ddl",
-            "org.opencontainers.image.licenses" to "GPLv3"
+            "org.opencontainers.image.licenses" to "GPLv3+"
         )
     }
 }
