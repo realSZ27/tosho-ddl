@@ -2,6 +2,7 @@
 - I'm still learning! If you have any CONSTRUCTIVE feedback, please say something!
 - Although I intend to maintain this app as long as I can, I have other things to keep up with.
 - For now, I'm calling this a beta. It works fine for me, but there are probably dozens of bugs to fix before I can call it fully functional.
+- No contributor of this program takes any responsibility 
 
 # DDL Proxy
 Despite the name, this supports more than just AnimeTosho. 
@@ -113,3 +114,6 @@ Just to be sure, you can also set `Download Client` to the Torrent Blackhole wit
 In `Advanced Settings`, turn on `Deprecated Api`, off `Deprecated Api Localhost Only` and restart JDownloader.
 
 ![jdownloader.png](images/jdownloader.png)
+
+# Development
+

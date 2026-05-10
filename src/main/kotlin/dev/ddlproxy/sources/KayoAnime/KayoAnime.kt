@@ -108,7 +108,7 @@ class KayoAnimeSource(
     }
 
     override suspend fun getRecent(): List<Release> {
-        val recentPage = fetch("$baseUrl/ongoing-animes/")
+        val recentPage = fetch("$baseUrl/category/ongoing-anime/")
         val entries = parsePostPage(recentPage)
 
         val pages = coroutineScope {
