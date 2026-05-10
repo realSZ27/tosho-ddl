@@ -191,10 +191,12 @@ class KayoAnimeSource(
     }
 
     private fun buildPageStub(entry: EntryStub, doc: Document): PageStub {
-        val buttons = doc.select("""a[href^="https://drive.google.com/drive/folders/"]""")
+        val buttons = doc.select("""a.shortc-button""")
             .mapNotNull {
+                val buttonText = it.text().trim()
+                if (buttonText.equals("Google Group", ignoreCase = true)) return@mapNotNull null
                 ButtonStub(
-                    it.text().trim(),
+                    buttonText,
                     it.attr("abs:href")
                 )
             }
