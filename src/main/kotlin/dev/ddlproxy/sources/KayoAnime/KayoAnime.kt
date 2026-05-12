@@ -370,7 +370,7 @@ class KayoAnimeSource(
 
             // Remove dangling separators like "|" or "-"
             .replace(Regex("""[\|\-]\s*$"""), "")
-            .replace(Regex("""^\s*[\|\-]"""), "")
+            .replace(Regex("""^\s*[|\-]"""), "")
 
             // Remove multiple separators left behind
             .replace(Regex("""\s*\+\s*"""), " ")

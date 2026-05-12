@@ -3,6 +3,7 @@ package dev.ddlproxy
 import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.service.JDownloaderController
 import dev.ddlproxy.sources.AnimeTosho.AnimeToshoSource
+import dev.ddlproxy.sources.AnimeToshoNew.AnimeToshoNewSource
 import dev.ddlproxy.sources.KayoAnime.KayoAnimeSource
 import dev.ddlproxy.sources.TokyoInsider.TokyoInsiderSource
 import io.ktor.client.HttpClient
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.client.RestTemplate
 import tools.jackson.databind.ObjectMapper
+import tools.jackson.module.kotlin.jacksonObjectMapper
 
 @Configuration
 @EnableConfigurationProperties(AppConfig.AppProperties::class)
@@ -33,7 +35,7 @@ class AppConfig {
     }
 
     @Bean
-    fun objectMapper() = ObjectMapper()
+    fun objectMapper() = jacksonObjectMapper()
 
     @Bean
     fun downloadSources(
@@ -90,8 +92,26 @@ class AppConfig {
         jDownloaderController
     )
 
+    @Bean
+    @ConditionalOnProperty(
+        prefix = "app.sources.animeToshoNew",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun animeToshoNewSource(
+        client: HttpClient,
+        objectMapper: ObjectMapper,
+        jDownloaderController: JDownloaderController
+    ) = AnimeToshoNewSource(
+        client,
+        objectMapper,
+        jDownloaderController
+    )
+
     enum class Source {
         AnimeTosho,
+        AnimeToshoNew,
         TokyoInsider,
         KayoAnime,
     }
