@@ -2,19 +2,20 @@
 - I'm still learning! If you have any CONSTRUCTIVE feedback, please say something!
 - Although I intend to maintain this app as long as I can, I have other things to keep up with.
 - For now, I'm calling this a beta. It works fine for me, but there are probably dozens of bugs to fix before I can call it fully functional.
-- No contributor of this program takes any responsibility 
 
 # DDL Proxy
 Despite the name, this supports more than just AnimeTosho. 
 Gives Sonarr a valid Torznab feed to pick releases from, and picks up which one it chose via Torrent Blackhole. Then, downloads the release with JDownloader.
 
 ## Supported Sites
-Currently the app supports:
-| Site Name    | Comments                                                                                                                                                                                                                                                                                                                                                                          |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AnimeTosho   | Original site. Supports all features out of the box. Will shut down permanantly May 9th.                                                                                                                                                                                                                                                                                          |
-| TokyoInsider | Frequently goes down, and is user-submitted. However, it has many releases from good groups, and requires no setup.                                                                                                                                                                                                                                                               |
-| KayoAnime    | Requires setting up [Google Drive](https://support.jdownloader.org/en/knowledgebase/article/account-cookie-login-instructions) with JDownloader. Large library of mini encodes. Private folders are hit or miss. JDownloader says they don't work at all, but I've found some that do, so it's worth joining their group anyway (it's the same group for everything on the site). |
+Currently, the app supports:
+
+| Site Name     | Comments                                                                                                                                                                                                                                                                                                                                                                          |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| AnimeTosho    | Original site. Supports all features out of the box. No new releases are being added anymore (as of May 9th, 2026).                                                                                                                                                                                                                                                               |
+| AnimeToshoNew | Continuation of AnimeTosho (ends in .xyz). It is largely the same as the original, however it is too new to make any gaurentees.                                                                                                                                                                                                                                                  |
+| TokyoInsider  | Frequently goes down, and is user-submitted. However, it has many releases from good groups, and requires no setup.                                                                                                                                                                                                                                                               |
+| KayoAnime     | Requires setting up [Google Drive](https://support.jdownloader.org/en/knowledgebase/article/account-cookie-login-instructions) with JDownloader. Large library of mini encodes. Private folders are hit or miss. JDownloader says they don't work at all, but I've found some that do, so it's worth joining their group anyway (it's the same group for everything on the site). |
 
 If you have a request, or want to add more yourself, open an issue or pr.
 
@@ -68,7 +69,7 @@ If you would like to disable a source, you can add an evironment variable like: 
 Most of these don't need to be changed.
 
 | Variable                          | Description                                                                                                                                                           | Default                |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
 | JDOWNLOADER_API_URL               | URL used to communicate with the JDownloader API.                                                                                                                     | http://localhost:3128/ |
 | BASE_URL                          | Base URL where generated .torrent files are served.                                                                                                                   | http://localhost:8080/ |
 | DOWNLOAD_FOLDER                   | Directory where JDownloader saves downloaded files                                                                                                                    | /downloads             |
@@ -117,3 +118,4 @@ In `Advanced Settings`, turn on `Deprecated Api`, off `Deprecated Api Localhost 
 
 # Development
 
+This project uses [just](https://github.com/casey/just) as a command runner. Check the [justfile](justfile) to see usage. Just will look for a `.env` file in the project root and will automatically load the required environment variables (look at the `ARGS` array in the justfile for the accepted variables).

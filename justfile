@@ -16,11 +16,7 @@ dev *args:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    echo "BLACKHOLE_FOLDER=${BLACKHOLE_FOLDER}"
-    echo "DOWNLOAD_FOLDER=${DOWNLOAD_FOLDER}"
-
-    ls -ld "${BLACKHOLE_FOLDER}"
-    ls -ld "${DOWNLOAD_FOLDER}"
+    set -- {{args}}
 
     SPRING_ARGS=()
 
@@ -43,8 +39,11 @@ dev *args:
         "--download.folder=${DOWNLOAD_FOLDER}"
         "--logging.level.dev.ddlproxy=${LOG_LEVEL}"
         "--base.url=${BASE_URL}"
+        "--jdownloader.api.url=${JDOWNLOADER_API_URL}"
         "${SPRING_ARGS[@]}"
     )
+
+    echo ./gradlew bootRun --args="${ARGS[*]}"
 
     ./gradlew bootRun --args="${ARGS[*]}"
 

@@ -1,11 +1,12 @@
 import java.time.Instant
 
 group = "dev.ddlproxy"
-version = "2.2.2"
+version = "2.3.0"
 
 val ktor_version = "3.2.1"
 val kotlin_coroutines_version = "1.10.2"
 val jsoup_version = "1.22.1"
+val jackson_kotlin_version = "3.1.+"
 //val graaljs_version = "25.0.2"
 
 plugins {
@@ -43,6 +44,8 @@ dependencies {
 
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
+
+    implementation("tools.jackson.module:jackson-module-kotlin:$jackson_kotlin_version")
 
     // for AnimePahe
     //implementation("org.graalvm.js:js:$graaljs_version")
