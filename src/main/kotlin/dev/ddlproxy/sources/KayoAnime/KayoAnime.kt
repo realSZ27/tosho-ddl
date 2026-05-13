@@ -8,7 +8,6 @@ import dev.ddlproxy.service.JDownloaderController
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
-import io.ktor.client.statement.request
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -125,29 +124,9 @@ class KayoAnimeSource(
     }
 
     override suspend fun download(identifier: String) {
-        val redirectLink = client.get(identifier)
-            .request
-            .url
-            .toString()
-
-        if (redirectLink.contains("workers.dev")) {
-            val linksPage = fetch(redirectLink)
-            val links = linksPage.select(".list-group-item a")
-                .mapNotNull {
-                    it.attr("href").trim()
-                }
-
-            jDownloaderController.download(
-                LinkGroup(
-                    "Workers.dev",
-                    links
-                )
-            )
-        } else {
-            jDownloaderController.download(
-                LinkGroup("Google Drive", listOf(redirectLink))
-            )
-        }
+        jDownloaderController.download(
+            LinkGroup("Google Drive", listOf(identifier))
+        )
     }
 
     private suspend fun handleRequested(entry: EntryStub): List<PageStub> {
@@ -369,7 +348,7 @@ class KayoAnimeSource(
             .replace(Regex("""\(\s*\)"""), "")
 
             // Remove dangling separators like "|" or "-"
-            .replace(Regex("""[\|\-]\s*$"""), "")
+            .replace(Regex("""[|\-]\s*$"""), "")
             .replace(Regex("""^\s*[|\-]"""), "")
 
             // Remove multiple separators left behind
