@@ -1,7 +1,7 @@
 import java.time.Instant
 
 group = "dev.ddlproxy"
-version = "2.3.0"
+version = "2.3.1"
 
 val ktor_version = "3.2.1"
 val kotlin_coroutines_version = "1.10.2"
@@ -60,12 +60,12 @@ jib {
     container {
         labels = mapOf(
             "maintainer" to "SZ27 (https://github.com/realSZ27)",
-            "org.opencontainers.image.title" to "ToshoDDL",
-            "org.opencontainers.image.version" to project.version.toString(),
-            "org.opencontainers.image.created" to Instant.now().toString(),
-            "org.opencontainers.image.url" to "https://github.com/realSZ27/tosho-ddl",
-            "org.opencontainers.image.source" to "https://github.com/realSZ27/tosho-ddl",
-            "org.opencontainers.image.licenses" to "GPLv3+"
+            "title" to "ToshoDDL",
+            "version" to project.version.toString(),
+            "created" to Instant.now().toString(),
+            "url" to "https://github.com/realSZ27/tosho-ddl",
+            "source" to "https://github.com/realSZ27/tosho-ddl",
+            "licenses" to "GPLv3+"
         )
     }
 }
