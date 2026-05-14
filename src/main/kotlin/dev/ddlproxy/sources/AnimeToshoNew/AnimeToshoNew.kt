@@ -46,12 +46,12 @@ class AnimeToshoNewSource(
             fullQuery += "E$paddedEpisode"
         }
 
-        val searchPage = fetch(encode("$baseUrl/search?q=$fullQuery"))
+        val searchPage = fetch("$baseUrl/search?q=${encode(fullQuery)}")
         return processPage(searchPage)
     }
 
     override suspend fun getRecent(): List<Release> {
-        val recentPage = fetch(encode("$baseUrl/"))
+        val recentPage = fetch("$baseUrl/")
         return processPage(recentPage)
     }
 
