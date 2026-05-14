@@ -13,6 +13,8 @@ import org.jsoup.nodes.Document
 import org.jsoup.parser.Parser
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.module.kotlin.readValue
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -44,12 +46,12 @@ class AnimeToshoNewSource(
             fullQuery += "E$paddedEpisode"
         }
 
-        val searchPage = fetch("$baseUrl/search?q=$fullQuery")
+        val searchPage = fetch(encode("$baseUrl/search?q=$fullQuery"))
         return processPage(searchPage)
     }
 
     override suspend fun getRecent(): List<Release> {
-        val recentPage = fetch("$baseUrl/")
+        val recentPage = fetch(encode("$baseUrl/"))
         return processPage(recentPage)
     }
 
@@ -130,6 +132,9 @@ class AnimeToshoNewSource(
             .parse(dateText, formatter)
             .toInstant(ZoneOffset.UTC)
     }
+
+    private fun encode(value: String): String =
+        URLEncoder.encode(value, StandardCharsets.UTF_8)
 
     suspend fun fetch(url: String, parser: Parser = Parser.htmlParser()): Document {
         val body = client.get(url).bodyAsText()
