@@ -127,7 +127,7 @@ class AnimeToshoNewSource(
     }
 
     fun parseInstant(dateText: String): Instant {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss 'UTC'")
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm z")
         return LocalDateTime
             .parse(dateText, formatter)
             .toInstant(ZoneOffset.UTC)
