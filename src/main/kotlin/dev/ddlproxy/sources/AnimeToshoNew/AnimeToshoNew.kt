@@ -90,13 +90,21 @@ class AnimeToshoNewSource(
             val anchors = linksContainer.select("> a")
 
             val hostLinks = anchors
-                .drop(2)
-                .map {
+                .mapNotNull {
+                    val text = it.text().trim()
+                    if (text.equals("torrent", ignoreCase = true) ||
+                        text.equals("magnet", ignoreCase = true) ||
+                        text.equals("nzb", ignoreCase = true)) {
+                        return@mapNotNull null
+                    }
+
                     LinkGroup(
                         host = it.text(),
                         links = listOf(it.attr("abs:href"))
                     )
                 }
+
+            if (hostLinks.isEmpty()) return@mapNotNull null
 
             Release(
                 title = title,
