@@ -1,13 +1,12 @@
 import java.time.Instant
 
 group = "dev.ddlproxy"
-version = "2.3.5"
+version = "2.4.0"
 
-val ktor_version = "3.2.1"
-val kotlin_coroutines_version = "1.10.2"
-val jsoup_version = "1.22.1"
-val jackson_kotlin_version = "3.1.+"
-//val graaljs_version = "25.0.2"
+val ktorVersion = "3.2.1"
+val kotlinCoroutinesVersion = "1.10.2"
+val jsoupVersion = "1.22.1"
+val jacksonKotlinVersion = "3.1.+"
 
 plugins {
     id("java")
@@ -36,20 +35,16 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
 
-    implementation("org.jsoup:jsoup:$jsoup_version")
+    implementation("org.jsoup:jsoup:$jsoupVersion")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlin_coroutines_version")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:$kotlinCoroutinesVersion")
 
-    implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:$ktor_version")
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
 
-    implementation("tools.jackson.module:jackson-module-kotlin:$jackson_kotlin_version")
-
-    // for AnimePahe
-    //implementation("org.graalvm.js:js:$graaljs_version")
-    //implementation("org.graalvm.polyglot:polyglot:$graaljs_version")
+    implementation("tools.jackson.module:jackson-module-kotlin:$jacksonKotlinVersion")
 }
 
 jib {

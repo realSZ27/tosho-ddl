@@ -76,23 +76,6 @@ class AppConfig {
 
     @Bean
     @ConditionalOnProperty(
-        prefix = "app.sources.animeToshoNew",
-        name = ["enabled"],
-        havingValue = "true",
-        matchIfMissing = true
-    )
-    fun animeToshoNewSource(
-        client: HttpClient,
-        objectMapper: ObjectMapper,
-        jDownloaderController: JDownloaderController
-    ) = AnimeToshoNewSource(
-        client,
-        objectMapper,
-        jDownloaderController
-    )
-
-    @Bean
-    @ConditionalOnProperty(
         prefix = "app.sources.tsukiHime",
         name = ["enabled"],
         havingValue = "true",
@@ -103,6 +86,23 @@ class AppConfig {
         objectMapper: ObjectMapper,
         jDownloaderController: JDownloaderController
     ) = TsukiHimeSource(
+        client,
+        objectMapper,
+        jDownloaderController
+    )
+
+    @Bean
+    @ConditionalOnProperty(
+        prefix = "app.sources.animeToshoNew",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun animeToshoNewSource(
+        client: HttpClient,
+        objectMapper: ObjectMapper,
+        jDownloaderController: JDownloaderController
+    ) = AnimeToshoNewSource(
         client,
         objectMapper,
         jDownloaderController
