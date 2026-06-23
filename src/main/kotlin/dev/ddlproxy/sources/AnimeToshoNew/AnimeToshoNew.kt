@@ -5,9 +5,9 @@ import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.model.LinkGroup
 import dev.ddlproxy.model.Release
 import dev.ddlproxy.service.JDownloaderController
-import io.ktor.client.HttpClient
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.parser.Parser
@@ -135,7 +135,7 @@ class AnimeToshoNewSource(
     }
 
     fun parseInstant(dateText: String): Instant {
-        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm z")
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
         return LocalDateTime
             .parse(dateText, formatter)
             .toInstant(ZoneOffset.UTC)
