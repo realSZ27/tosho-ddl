@@ -1,14 +1,15 @@
 package dev.ddlproxy.service
 
-import dev.ddlproxy.model.Release
 import dev.ddlproxy.model.DownloadSource
+import dev.ddlproxy.model.Release
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.util.MultiValueMap
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-import kotlinx.coroutines.*
 import java.io.StringWriter
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -30,11 +31,13 @@ class DownloadService(
 
     suspend fun handleQuery(params: MultiValueMap<String, String>): String {
         return try {
+            logger.debug("params are {}", params)
             val qValues = mutableListOf<String>()
             var season: Int? = null
             var episode: Int? = null
 
             for ((key, values) in params) {
+                logger.debug("{}: {}", key, values)
                 when {
                     key.equals("season", true) && values.isNotEmpty() -> {
                         season = values.first().toIntOrNull()
@@ -49,6 +52,7 @@ class DownloadService(
             }
 
             val query = qValues.joinToString(" ")
+            logger.debug("query is {}", query)
 
             val results = coroutineScope {
                 sources.map { source ->
@@ -64,7 +68,9 @@ class DownloadService(
                             emptyList()
                         }
                     }
-                }.awaitAll().flatten()
+                }.awaitAll().flatten().distinctBy {
+                    it.title.trim()
+                }
             }
 
             buildTorznabFeed(results)
@@ -82,7 +88,7 @@ class DownloadService(
             return
         }
 
-        val links = try {
+        try {
             source.download(identifier)
         } catch (e: Exception) {
             logger.error("Failed to fetch links for {}:{}", sourceName, identifier, e)

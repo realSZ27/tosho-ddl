@@ -5,6 +5,7 @@ import dev.ddlproxy.service.JDownloaderController
 import dev.ddlproxy.sources.AnimeToshoNew.AnimeToshoNewSource
 import dev.ddlproxy.sources.KayoAnime.KayoAnimeSource
 import dev.ddlproxy.sources.TokyoInsider.TokyoInsiderSource
+import dev.ddlproxy.sources.TsukiHime.TsukiHimeSource
 import io.ktor.client.*
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -75,6 +76,23 @@ class AppConfig {
 
     @Bean
     @ConditionalOnProperty(
+        prefix = "app.sources.tsukiHime",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun tsukiHimeSource(
+        client: HttpClient,
+        objectMapper: ObjectMapper,
+        jDownloaderController: JDownloaderController
+    ) = TsukiHimeSource(
+        client,
+        objectMapper,
+        jDownloaderController
+    )
+
+    @Bean
+    @ConditionalOnProperty(
         prefix = "app.sources.animeToshoNew",
         name = ["enabled"],
         havingValue = "true",
@@ -94,5 +112,6 @@ class AppConfig {
         AnimeToshoNew,
         TokyoInsider,
         KayoAnime,
+        TsukiHime,
     }
 }
