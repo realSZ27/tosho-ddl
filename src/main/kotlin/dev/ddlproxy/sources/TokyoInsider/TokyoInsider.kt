@@ -5,16 +5,13 @@ import dev.ddlproxy.model.DownloadSource
 import dev.ddlproxy.model.LinkGroup
 import dev.ddlproxy.model.Release
 import dev.ddlproxy.service.JDownloaderController
-import io.ktor.client.HttpClient
-import io.ktor.client.request.get
-import io.ktor.client.request.headers
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.coroutineScope
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -22,9 +19,7 @@ import org.jsoup.parser.Parser
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 class TokyoInsiderSource(
@@ -37,6 +32,9 @@ class TokyoInsiderSource(
     private val logger = LoggerFactory.getLogger(TokyoInsiderSource::class.java)
 
     private val baseUrl = "https://www.tokyoinsider.com"
+
+    private val cookie = generateRandomCookie()
+    private val referrer = baseUrl
 
     override suspend fun search(query: String, season: Int?, episode: Int?): List<Release> {
         logger.debug("Starting search for query: '$query'")
@@ -216,7 +214,7 @@ class TokyoInsiderSource(
             pubDate = dateInstant,
             fileSize = sizeLong
         ).also {
-            logger.trace("Extracted release: $it")
+            logger.trace("Extracted release: {}", it)
         }
     }
 
@@ -276,10 +274,17 @@ class TokyoInsiderSource(
 
         val body = client.get(url) {
             headers {
-                append("User-Agent", "Mozilla/5.0")
+                append(HttpHeaders.UserAgent, "Mozilla/5.0")
+                append(HttpHeaders.Referrer, referrer)
+                append(HttpHeaders.Cookie, "__ddg2_=$cookie")
             }
         }.bodyAsText()
 
         return Jsoup.parse(body, baseUrl, parser)
+    }
+
+    private fun generateRandomCookie(): String {
+        val chars = ('a'..'z') + ('A'..'Z') + ('0'..'9')
+        return (1..16).map { chars.random() }.joinToString("")
     }
 }

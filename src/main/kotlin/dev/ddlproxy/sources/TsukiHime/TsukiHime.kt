@@ -31,6 +31,7 @@ class TsukiHimeSource(
         season: Int?,
         episode: Int?
     ): List<Release> {
+        logger.trace("got search for $query")
         var fullQuery = query
 
         if (season != null) {
@@ -61,6 +62,7 @@ class TsukiHimeSource(
     }
 
     override suspend fun getRecent(): List<Release> {
+        logger.trace("got recent")
         val results = getJson("$baseUrl/torrents").path("results")
 
         if (!results.isArray || results.isEmpty) {
