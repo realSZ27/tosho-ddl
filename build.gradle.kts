@@ -1,7 +1,7 @@
 import java.time.Instant
 
 group = "dev.ddlproxy"
-version = "2.4.0"
+version = "2.4.1"
 
 val ktorVersion = "3.2.1"
 val kotlinCoroutinesVersion = "1.10.2"

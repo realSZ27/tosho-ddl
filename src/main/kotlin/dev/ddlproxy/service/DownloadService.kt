@@ -144,6 +144,9 @@ class DownloadService(
                     .format(release.pubDate.atOffset(ZoneOffset.UTC))
             )
 
+            val guid = Base64.UrlSafe.encode("${release.source}|${release.identifier}".toByteArray())
+            appendText(item, "guid", guid)
+
             if (release.webpageLink != null)
                 appendText(item, "comments", release.webpageLink)
 
