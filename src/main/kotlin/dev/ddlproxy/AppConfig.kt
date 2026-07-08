@@ -108,10 +108,30 @@ class AppConfig {
         jDownloaderController
     )
 
+    @Bean
+    @ConditionalOnProperty(
+        prefix = "app.sources.hi10Anime",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun hi10AnimeSource(
+        client: HttpClient,
+        jDownloaderController: JDownloaderController,
+        objectMapper: ObjectMapper,
+        props: AppProperties,
+    ) = Hi10AnimeClient(
+        client,
+        jDownloaderController,
+        objectMapper,
+        seleniumUrl = props.seleniumUrl?.trim()?.trimEnd('/') ?: ""
+    )
+
     enum class Source {
         AnimeToshoNew,
         TokyoInsider,
         KayoAnime,
         TsukiHime,
+        Hi10Anime,
     }
 }
